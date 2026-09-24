@@ -1,0 +1,31 @@
+name: Casino bauen und testen
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: plugin/pom.xml
+      - name: Plugin bauen und Tests ausführen
+        run: mvn --batch-mode --no-transfer-progress -f plugin/pom.xml clean verify
+      - name: Ressourcenpaket bauen
+        shell: pwsh
+        run: ./modelle/build-resourcepack.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Casino-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            plugin/target/Casino-0.2.0.jar
+            Casino-Resourcepack.zip

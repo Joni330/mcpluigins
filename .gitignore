@@ -1,0 +1,11 @@
+.DS_Store
+Thumbs.db
+dist/
+.tools/
+plugin/target/
+server/
+Casino-Resourcepack.zip
+.env
+.env.*
+*.pem
+*.key

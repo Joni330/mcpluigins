@@ -1,0 +1,16 @@
+name: Casino
+version: 0.2.0
+main: de.casino.CasinoPlugin
+api-version: '26.3'
+description: Casino-Konten, Wechselautomaten und Kistenmenü
+commands:
+  pay:
+    description: Geld an einen Online-Spieler überweisen
+    usage: /pay <Spieler> <Betrag>
+  casino:
+    description: Casino-Konto und Automaten verwalten
+    usage: /casino [konto|spielautomat|give|migrate]
+permissions:
+  casino.admin:
+    description: Automaten-Items erhalten und alte Automaten übernehmen
+    default: op
