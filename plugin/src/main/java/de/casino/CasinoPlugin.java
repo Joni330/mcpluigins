@@ -40,6 +40,8 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         Objects.requireNonNull(getCommand("casino")).setTabCompleter(this);
         Objects.requireNonNull(getCommand("pay")).setExecutor(this);
         Objects.requireNonNull(getCommand("pay")).setTabCompleter(this);
+        Objects.requireNonNull(getCommand("payload")).setExecutor(this);
+        Objects.requireNonNull(getCommand("payload")).setTabCompleter(this);
         getServer().getPluginManager().registerEvents(this, this);
         chips = new Chips(this);
         getServer().getPluginManager().registerEvents(chips, this);
@@ -109,6 +111,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     }
 
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (command.getName().equalsIgnoreCase("payload")) return payload(sender, args);
         if (!(sender instanceof Player player)) { sender.sendMessage("Bitte im Spiel ausführen."); return true; }
         if (command.getName().equalsIgnoreCase("pay")) return pay(player, args);
         String action = args.length == 0 ? "konto" : args[0].toLowerCase(Locale.ROOT);
@@ -134,6 +137,11 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     }
 
     @Override public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (command.getName().equalsIgnoreCase("payload")) {
+            if (!sender.hasPermission("casino.admin") || args.length != 1) return List.of();
+            return Bukkit.getOnlinePlayers().stream().map(Player::getName)
+                    .filter(name -> name.toLowerCase(Locale.ROOT).startsWith(args[0].toLowerCase(Locale.ROOT))).toList();
+        }
         if (command.getName().equalsIgnoreCase("pay")) {
             return args.length == 1 ? Bukkit.getOnlinePlayers().stream().filter(p -> !p.equals(sender))
                     .map(Player::getName).filter(name -> name.toLowerCase(Locale.ROOT).startsWith(args[0].toLowerCase(Locale.ROOT))).toList() : List.of();
@@ -150,6 +158,29 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     }
 
     private ItemStack machineItem() { return machineItem(false); }
+
+    private boolean payload(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("casino.admin")) { sender.sendMessage("Dafür fehlen dir die Admin-Rechte."); return true; }
+        if (args.length != 2) { sender.sendMessage("/payload <Spieler> <Betrag> – zum Beispiel /payload Joni 50"); return true; }
+        Player recipient = Bukkit.getPlayerExact(args[0]);
+        if (recipient == null) { sender.sendMessage("Dieser Spieler ist nicht online. Bitte den vollständigen Namen eingeben."); return true; }
+        long cents;
+        try { cents = Money.parsePositive(args[1]); }
+        catch (IllegalArgumentException | ArithmeticException error) {
+            sender.sendMessage("Bitte einen positiven Euro-Betrag mit höchstens zwei Nachkommastellen eingeben, z. B. 50 oder 0,50."); return true;
+        }
+        try {
+            long balance = accounts.credit(recipient, cents);
+            sender.sendMessage(Component.text(recipient.getName() + " wurden " + Money.format(cents) + " gutgeschrieben. Guthaben: " + Money.format(balance), NamedTextColor.GREEN));
+            if (!recipient.equals(sender)) recipient.sendMessage(Component.text("Ein Admin hat dir " + Money.format(cents) + " gutgeschrieben. Guthaben: " + Money.format(balance), NamedTextColor.GREEN));
+            getLogger().info(sender.getName() + " hat " + recipient.getName() + " per /payload " + Money.format(cents) + " gutgeschrieben.");
+        } catch (ArithmeticException error) { sender.sendMessage("Die Gutschrift würde das Kontolimit überschreiten."); }
+        catch (IOException error) {
+            sender.sendMessage("Speichern fehlgeschlagen. Es wurde kein Geld gutgeschrieben.");
+            getLogger().log(java.util.logging.Level.SEVERE, "Admin-Gutschrift fehlgeschlagen", error);
+        }
+        return true;
+    }
 
     private boolean pay(Player sender, String[] args) {
         if (args.length != 2) { sender.sendMessage("/pay <Spieler> <Betrag> – zum Beispiel /pay Milo 3"); return true; }

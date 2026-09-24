@@ -4,6 +4,11 @@ main: de.casino.CasinoPlugin
 api-version: '26.3'
 description: Casino-Konten, Wechselautomaten und Kistenmenü
 commands:
+  payload:
+    description: Als Admin Casino-Guthaben gutschreiben
+    usage: /payload <Spieler> <Betrag>
+    permission: casino.admin
+    permission-message: Dafür fehlen dir die Admin-Rechte.
   pay:
     description: Geld an einen Online-Spieler überweisen
     usage: /pay <Spieler> <Betrag>
