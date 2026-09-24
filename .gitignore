@@ -4,6 +4,9 @@ dist/
 .tools/
 plugin/target/
 server/
+modelle/
+*.md
+*.bat
 Casino-Resourcepack.zip
 .env
 .env.*
