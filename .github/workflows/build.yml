@@ -32,33 +32,35 @@ jobs:
           path: |
             plugin/target/Casino-0.2.0.jar
             Casino-Resourcepack.zip
-  release:
+  publish-files:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/download-artifact@v4
         with:
           name: Casino-${{ github.sha }}
           path: download
-      - name: Einzelne Dateien als Release veröffentlichen
+      - name: Fertige Dateien in main aktualisieren
         env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
           BUILD_SHA: ${{ github.sha }}
         shell: bash
         run: |
           set -euo pipefail
+          if [ "$(git rev-parse HEAD)" != "$BUILD_SHA" ]; then
+            echo "Neuere Quellen vorhanden; dieser Build überschreibt main nicht."
+            exit 0
+          fi
           cp download/plugin/target/Casino-0.2.0.jar Casino.jar
           cp download/Casino-Resourcepack.zip Casino-Resourcepack.zip
-          tag="build-$BUILD_SHA"
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" Casino.jar Casino-Resourcepack.zip --clobber
-          else
-            gh release create "$tag" Casino.jar Casino-Resourcepack.zip \
-              --target "$BUILD_SHA" --title "Casino – ${BUILD_SHA:0:7}" \
-              --notes "Automatisch gebaut und getestet. Casino.jar in den plugins-Ordner kopieren; Casino-Resourcepack.zip als Ressourcenpaket verwenden. Plugin-Updates benötigen einen Serverneustart." \
-              --latest
-          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- Casino.jar Casino-Resourcepack.zip
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Update built plugin and resource pack [skip ci]"
+          git push origin HEAD:main
