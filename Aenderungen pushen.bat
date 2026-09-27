@@ -27,7 +27,10 @@ git commit -m "Casino aktualisiert"
 if errorlevel 1 goto failed
 :sync
 git pull --rebase origin main
+if not errorlevel 1 goto push
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0plugin\resolve-built-jar.ps1"
 if errorlevel 1 goto failed
+:push
 git push origin main
 if errorlevel 1 goto failed
 echo.
