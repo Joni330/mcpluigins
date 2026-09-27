@@ -86,7 +86,7 @@ final class Chips implements Listener {
     private boolean isChip(ItemStack item) {
         return kind(item) != null;
     }
-    private Kind kind(ItemStack item) {
+    Kind kind(ItemStack item) {
         return item == null || !item.hasItemMeta() ? null : Kind.fromId(item.getItemMeta().getPersistentDataContainer().get(chipKey, PersistentDataType.STRING));
     }
     private Kind kind(Entity root) {
@@ -203,3 +203,4 @@ final class Chips implements Listener {
         base.getWorld().dropItemNaturally(base.clone().add(0, existing.size() * CHIP_HEIGHT + .15, 0), item(kind));
     }
 }
+

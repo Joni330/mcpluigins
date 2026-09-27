@@ -59,12 +59,13 @@ final class SlotMenu implements InventoryHolder {
         inventory.setItem(INCREASE_EURO, ExchangeMenu.icon(Material.LIME_STAINED_GLASS_PANE, "Einsatz erhöhen (+1,00€)"));
         inventory.setItem(DECREASE_EURO, ExchangeMenu.icon(Material.RED_STAINED_GLASS_PANE, "Einsatz verringern (−1,00€)"));
         inventory.setItem(LAST_WIN, ExchangeMenu.icon(Material.GOLD_INGOT, "Letzter Gewinn: " + Money.format(displayedPayout)));
-        inventory.setItem(BALANCE, ExchangeMenu.icon(Material.GOLD_BLOCK, "Dein Konto: " + Money.format(accounts.balance(player))));
+        inventory.setItem(BALANCE, ExchangeMenu.icon(Material.GOLD_BLOCK, "Casino-Guthaben: " + Money.format(accounts.casinoBalance(player))));
         inventory.setItem(SPIN, ExchangeMenu.icon(Material.LIME_WOOL, animation == null ? "Spin" : "Walzen drehen …"));
     }
 
     void click(int slot) {
         if (closed) return;
+        if (machine == null) return;
         if (machine != null) {
             var entity = Bukkit.getEntity(machine);
             if (entity == null || !entity.isValid() || entity.getWorld() != player.getWorld()
@@ -77,7 +78,13 @@ final class SlotMenu implements InventoryHolder {
         }
         if (slot == BACK) {
             Bukkit.getScheduler().runTask(plugin, () -> {
-                if (player.getOpenInventory().getTopInventory().getHolder() == this) player.closeInventory();
+                if (player.getOpenInventory().getTopInventory().getHolder() != this) return;
+                if (machine != null) {
+                    var entity = Bukkit.getEntity(machine);
+                    if (entity == null || !entity.isValid() || entity.getWorld() != player.getWorld()
+                            || entity.getLocation().distanceSquared(player.getLocation()) > 64) { player.closeInventory(); return; }
+                }
+                player.openInventory(new GameSelection(machine).getInventory());
             });
             return;
         }
@@ -96,11 +103,14 @@ final class SlotMenu implements InventoryHolder {
     }
 
     private void spin() throws IOException {
-        if (accounts.balance(player) < bet) throw new IllegalStateException("Nicht genug Guthaben");
+        if (accounts.casinoBalance(player) < bet) throw new IllegalStateException("Nicht genug Guthaben");
         SlotRules.Play play = SlotRules.draw(bet, ThreadLocalRandom.current());
         // Die gesamte Respin-Kette wird vor der Animation atomar gespeichert.
         // Schließen, Disconnect oder Neustart können keinen Gewinn verlieren oder doppelt buchen.
-        accounts.settleSpin(player, bet, play.payout());
+        accounts.settleSpin(player, bet, play.payout(), "Spielautomat");
+        player.getOpenInventory().setTitle("Spielautomat");
+        for (int slot : new int[]{13, 17})
+            inventory.setItem(slot, ExchangeMenu.icon(Material.BLACK_STAINED_GLASS_PANE, " "));
         animation = new BukkitRunnable() {
             int frame, round;
             @Override public void run() {
@@ -125,6 +135,7 @@ final class SlotMenu implements InventoryHolder {
                         cancel(); animation = null;
                         displayedPayout = play.payout();
                         try { refresh(); } catch (IOException error) { player.sendMessage("Kontostand konnte nicht aktualisiert werden."); }
+                        if (play.payout() > 0) showWin(play.payout());
                         player.sendMessage(play.payout() > 0 ? "Auszahlung: " + Money.format(play.payout()) : "Keine Auszahlung bei diesem Spin.");
                     }
                 }
@@ -133,9 +144,28 @@ final class SlotMenu implements InventoryHolder {
         refresh();
     }
 
+    private void showWin(long payout) {
+        String label = "Auszahlung: " + Money.format(payout);
+        for (int slot : REELS) {
+            var symbol = inventory.getItem(slot);
+            if (symbol == null) continue;
+            var meta = symbol.getItemMeta();
+            meta.setEnchantmentGlintOverride(true);
+            meta.displayName(Component.text("Treffer · " + label, net.kyori.adventure.text.format.NamedTextColor.GOLD));
+            symbol.setItemMeta(meta);
+            inventory.setItem(slot, symbol);
+        }
+        for (int slot : new int[]{13, 17})
+            inventory.setItem(slot, ExchangeMenu.icon(Material.LIME_STAINED_GLASS_PANE, "Gewinnlinie · " + label));
+        player.getOpenInventory().setTitle("Spielautomat · " + label);
+        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, .8f, 1.2f);
+    }
+
     void close() {
         closed = true;
         if (animation != null) { animation.cancel(); animation = null; }
     }
     @Override public Inventory getInventory() { return inventory; }
 }
+
+

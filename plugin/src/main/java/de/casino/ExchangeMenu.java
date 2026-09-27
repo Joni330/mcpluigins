@@ -14,6 +14,8 @@ final class ExchangeMenu implements InventoryHolder {
     final boolean selection;
     static final int EXCHANGE_OPTION = 15;
     static final int CHIPS_OPTION = 11;
+    static final int TRANSFER_OPTION = 13;
+    static final int SHOP_OPTION = 22;
     private final Inventory inventory;
     private boolean returned;
 
@@ -29,10 +31,12 @@ final class ExchangeMenu implements InventoryHolder {
             inventory.setItem(slot, icon(slot % 9 == 0 || slot % 9 == 8 ? Material.IRON_BARS : Material.GRAY_STAINED_GLASS_PANE, " "));
         if (selection) {
             inventory.setItem(EXCHANGE_OPTION, icon(Material.GOLD_INGOT, "Erze zu Geld wechseln"));
-            inventory.setItem(CHIPS_OPTION, icon(Material.PAPER, "Geld zu Chips wechseln"));
+            inventory.setItem(CHIPS_OPTION, icon(Material.PAPER, "Casino-Guthaben zu Chips wechseln"));
+            inventory.setItem(TRANSFER_OPTION, icon(Material.GOLD_BLOCK, "Überweisung"));
             return;
         }
         inventory.setItem(ExchangeRules.INPUT, null);
+        inventory.setItem(SHOP_OPTION, icon(Material.CHEST, "Zum Itemshop"));
         inventory.setItem(ExchangeRules.OUTPUT, null);
         inventory.setItem(ExchangeRules.CONFIRM, icon(Material.LIME_STAINED_GLASS_PANE, "Bestätigen"));
         inventory.setItem(ExchangeRules.CLOSE, icon(Material.RED_STAINED_GLASS_PANE, "Abbrechen"));
@@ -63,14 +67,14 @@ final class ExchangeMenu implements InventoryHolder {
         // Auf dem Serverthread synchron: Slot zuerst leeren, bei Speicherfehler zurücksetzen.
         inventory.setItem(ExchangeRules.INPUT, null);
         try {
-            accounts.credit(player, payout);
+            accounts.credit(player, payout, "Erze verkauft");
         } catch (java.io.IOException | ArithmeticException error) {
             inventory.setItem(ExchangeRules.INPUT, input);
             refresh();
             throw error;
         }
         refresh();
-        player.sendMessage(Component.text("+" + Money.format(payout) + " Casino-Guthaben"));
+        player.sendMessage(Component.text("+" + Money.format(payout) + " auf dein Hauptkonto"));
     }
 
     void returnInput(Player player) {
@@ -86,3 +90,5 @@ final class ExchangeMenu implements InventoryHolder {
 
     @Override public Inventory getInventory() { return inventory; }
 }
+
+

@@ -23,6 +23,9 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     private NamespacedKey itemKey, machineKey, groupKey, recipeKey, slotRecipeKey;
     private Accounts accounts;
     private Chips chips;
+    private StorageTerminals storageTerminals;
+    private StorageTeams storageTeams;
+    private MainMenu mainMenu;
 
     @Override public void onEnable() {
         itemKey = new NamespacedKey(this, "exchange_item");
@@ -30,7 +33,10 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         groupKey = new NamespacedKey(this, "machine_group");
         recipeKey = new NamespacedKey(this, "exchange_machine_recipe");
         slotRecipeKey = new NamespacedKey(this, "slot_machine_recipe");
-        try { accounts = new Accounts(getDataFolder().toPath()); }
+        try {
+            accounts = new Accounts(getDataFolder().toPath());
+            storageTeams = new StorageTeams(getDataFolder().toPath());
+        }
         catch (Exception error) {
             getLogger().log(java.util.logging.Level.SEVERE, "Kontodaten konnten nicht geladen werden.", error);
             getServer().getPluginManager().disablePlugin(this);
@@ -46,12 +52,25 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         chips = new Chips(this);
         getServer().getPluginManager().registerEvents(chips, this);
         registerMachineRecipe();
+        StorageTeamCommand teamCommand = new StorageTeamCommand(storageTeams);
+        Objects.requireNonNull(getCommand("lagerteam")).setExecutor(teamCommand);
+        Objects.requireNonNull(getCommand("lagerteam")).setTabCompleter(teamCommand);
+        storageTerminals = new StorageTerminals(this, storageTeams);
+        storageTerminals.enable();
+        mainMenu = new MainMenu(this, accounts, storageTeams);
+        mainMenu.enable();
         Bukkit.getOnlinePlayers().forEach(player -> player.discoverRecipes(List.of(recipeKey, slotRecipeKey)));
         Bukkit.getOnlinePlayers().forEach(this::ensureAccount);
         // Schließen, wenn Spieler den Automaten verlassen oder dieser entladen wird.
         Bukkit.getScheduler().runTaskTimer(this, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
+                if (player.getOpenInventory().getTopInventory().getHolder() instanceof CasinoBankMenu bank && !canUseShop(player, bank.machine)) player.closeInventory();
+                if (player.getOpenInventory().getTopInventory().getHolder() instanceof RouletteMenu roulette && !roulette.usable()) player.closeInventory();
+                if (player.getOpenInventory().getTopInventory().getHolder() instanceof FiveReelMenu reels && !reels.usable()) player.closeInventory();
+                if (player.getOpenInventory().getTopInventory().getHolder() instanceof GameSelection menu
+                        && (player.getGameMode() == GameMode.SPECTATOR || menu.machine != null && !canUseShop(player, menu.machine))) player.closeInventory();
                 if (player.getOpenInventory().getTopInventory().getHolder() instanceof ChipShop shop && !canUseShop(player, shop.machine)) player.closeInventory();
+                if (player.getOpenInventory().getTopInventory().getHolder() instanceof ItemShop shop && !canUseShop(player, shop.machine)) player.closeInventory();
                 if (player.getOpenInventory().getTopInventory().getHolder() instanceof ExchangeMenu menu) {
                     Entity entity = Bukkit.getEntity(menu.machine);
                     if (entity == null || !entity.isValid() || entity.getWorld() != player.getWorld()
@@ -64,10 +83,20 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     }
 
     @Override public void onDisable() {
+        for (Player p : Bukkit.getOnlinePlayers()) if (p.getOpenInventory().getTopInventory().getHolder() instanceof CasinoBankMenu) p.closeInventory();
+        if (mainMenu != null) mainMenu.disable();
+        for (Player p : Bukkit.getOnlinePlayers()) if (p.getOpenInventory().getTopInventory().getHolder() instanceof FiveReelMenu reels) { reels.close(); p.closeInventory(); }
+        for (Player p : Bukkit.getOnlinePlayers()) if (p.getOpenInventory().getTopInventory().getHolder() instanceof RouletteMenu roulette) { roulette.close(); p.closeInventory(); }
+        if (storageTerminals != null) storageTerminals.disable();
         if (recipeKey != null) Bukkit.removeRecipe(recipeKey);
         if (slotRecipeKey != null) Bukkit.removeRecipe(slotRecipeKey);
         for (Player player : Bukkit.getOnlinePlayers()) {
+                if (player.getOpenInventory().getTopInventory().getHolder() instanceof CasinoBankMenu bank && !canUseShop(player, bank.machine)) player.closeInventory();
+                if (player.getOpenInventory().getTopInventory().getHolder() instanceof RouletteMenu roulette && !roulette.usable()) player.closeInventory();
+                if (player.getOpenInventory().getTopInventory().getHolder() instanceof FiveReelMenu reels && !reels.usable()) player.closeInventory();
+            if (player.getOpenInventory().getTopInventory().getHolder() instanceof GameSelection) player.closeInventory();
             if (player.getOpenInventory().getTopInventory().getHolder() instanceof ChipShop) player.closeInventory();
+            if (player.getOpenInventory().getTopInventory().getHolder() instanceof ItemShop) player.closeInventory();
             if (player.getOpenInventory().getTopInventory().getHolder() instanceof SlotMenu slots) {
                 slots.close();
                 player.closeInventory();
@@ -116,11 +145,10 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         if (command.getName().equalsIgnoreCase("pay")) return pay(player, args);
         String action = args.length == 0 ? "konto" : args[0].toLowerCase(Locale.ROOT);
         if (action.equals("konto")) {
-            try { player.sendMessage(Component.text("Casino-Guthaben: " + Money.format(accounts.balance(player)), NamedTextColor.GOLD)); }
+            try { player.sendMessage(Component.text("Hauptkonto: " + Money.format(accounts.balance(player)) + " · Casino-Guthaben: " + Money.format(accounts.casinoBalance(player)), NamedTextColor.GOLD)); }
             catch (IOException error) { ensureAccount(player); }
         } else if (action.equals("spielautomat")) {
-            try { player.openInventory(new SlotMenu(this, accounts, player).getInventory()); }
-            catch (IOException error) { ensureAccount(player); }
+            player.sendMessage("Spielen ist nur an einem aufgestellten Automaten möglich. Rechtsklicke einen Spielautomaten.");
         } else if (action.equals("give") || action.equals("migrate")) {
             if (!player.hasPermission("casino.admin")) { player.sendMessage("Dafür fehlen dir die Rechte."); return true; }
             if (action.equals("give")) {
@@ -170,7 +198,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
             sender.sendMessage("Bitte einen positiven Euro-Betrag mit höchstens zwei Nachkommastellen eingeben, z. B. 50 oder 0,50."); return true;
         }
         try {
-            long balance = accounts.credit(recipient, cents);
+            long balance = accounts.credit(recipient, cents, "Admin-Gutschrift");
             sender.sendMessage(Component.text(recipient.getName() + " wurden " + Money.format(cents) + " gutgeschrieben. Guthaben: " + Money.format(balance), NamedTextColor.GREEN));
             if (!recipient.equals(sender)) recipient.sendMessage(Component.text("Ein Admin hat dir " + Money.format(cents) + " gutgeschrieben. Guthaben: " + Money.format(balance), NamedTextColor.GREEN));
             getLogger().info(sender.getName() + " hat " + recipient.getName() + " per /payload " + Money.format(cents) + " gutgeschrieben.");
@@ -333,8 +361,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         if (!isMachine(root) || player.getGameMode() == GameMode.SPECTATOR) return;
         if (root.getPersistentDataContainer().getOrDefault(machineKey, PersistentDataType.BYTE, (byte) 1) == 2) {
             if (player.getOpenInventory().getTopInventory().getHolder() instanceof SlotMenu) return;
-            try { player.openInventory(new SlotMenu(this, accounts, player, root.getUniqueId()).getInventory()); }
-            catch (IOException error) { ensureAccount(player); }
+            player.openInventory(new GameSelection(root.getUniqueId()).getInventory());
             return;
         }
         if (player.getOpenInventory().getTopInventory().getHolder() instanceof ExchangeMenu) return;
@@ -355,6 +382,10 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         Location location = root.getLocation();
         boolean slots = root.getPersistentDataContainer().getOrDefault(machineKey, PersistentDataType.BYTE, (byte) 1) == 2;
         root.getPersistentDataContainer().remove(machineKey); // Vor Drop gegen doppelte Events sperren.
+        for (Player viewer : Bukkit.getOnlinePlayers()) if (viewer.getOpenInventory().getTopInventory().getHolder() instanceof FiveReelMenu menu && root.getUniqueId().equals(menu.machine)) viewer.closeInventory();
+        for (Player viewer : Bukkit.getOnlinePlayers()) if (viewer.getOpenInventory().getTopInventory().getHolder() instanceof RouletteMenu menu && root.getUniqueId().equals(menu.machine)) viewer.closeInventory();
+        for (Player viewer : Bukkit.getOnlinePlayers())
+            if (viewer.getOpenInventory().getTopInventory().getHolder() instanceof GameSelection menu && root.getUniqueId().equals(menu.machine)) viewer.closeInventory();
         for (Player viewer : Bukkit.getOnlinePlayers())
             if (viewer.getOpenInventory().getTopInventory().getHolder() instanceof SlotMenu menu && root.getUniqueId().equals(menu.machine))
                 viewer.closeInventory();
@@ -398,6 +429,72 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     }
 
     @EventHandler public void click(InventoryClickEvent event) {
+        if (event.getView().getTopInventory().getHolder() instanceof CasinoBankMenu bank) {
+            boolean cancelled = event.isCancelled(); event.setCancelled(true);
+            if (cancelled || event.getClick() != ClickType.LEFT || !(event.getWhoClicked() instanceof Player player)) return;
+            int slot = event.getRawSlot();
+            Bukkit.getScheduler().runTask(this, () -> {
+                if (!player.isOnline() || player.getOpenInventory().getTopInventory().getHolder() != bank) return;
+                if (!canUseShop(player, bank.machine)) { player.closeInventory(); return; }
+                if (slot == 53) { player.openInventory(new ExchangeMenu(bank.machine).getInventory()); return; }
+                try { bank.click(slot, player); }
+                catch (IllegalArgumentException | ArithmeticException error) { player.sendMessage("Umbuchung nicht möglich: " + error.getMessage()); }
+                catch (IOException error) { player.sendMessage("Speicherfehler. Buchung wurde nicht übernommen."); getLogger().log(java.util.logging.Level.SEVERE, "Casino-Umbuchung fehlgeschlagen", error); }
+            });
+            return;
+        }
+        if (event.getView().getTopInventory().getHolder() instanceof FiveReelMenu reels) {
+            boolean cancelled = event.isCancelled(); event.setCancelled(true);
+            if (!cancelled && event.getClick() == ClickType.LEFT) reels.click(event.getRawSlot());
+            return;
+        }
+        if (event.getView().getTopInventory().getHolder() instanceof RouletteMenu roulette) {
+            boolean cancelled = event.isCancelled(); event.setCancelled(true);
+            if (!cancelled && event.getClick() == ClickType.LEFT) roulette.click(event.getRawSlot());
+            return;
+        }
+        if (event.getView().getTopInventory().getHolder() instanceof GameSelection menu) {
+            boolean cancelled = event.isCancelled();
+            event.setCancelled(true);
+            if (cancelled || !(event.getWhoClicked() instanceof Player player) || event.getClick() != ClickType.LEFT) return;
+            int slot = event.getRawSlot();
+            Bukkit.getScheduler().runTask(this, () -> {
+                if (!player.isOnline() || player.getOpenInventory().getTopInventory().getHolder() != menu) return;
+                if (player.getGameMode() == GameMode.SPECTATOR || menu.machine != null && !canUseShop(player, menu.machine)) { player.closeInventory(); return; }
+                if (slot == 53) player.closeInventory();
+                else if (slot == 12) {
+                    try { player.openInventory(new FiveReelMenu(this, accounts, player, menu.machine).getInventory()); }
+                    catch (IOException error) { ensureAccount(player); }
+                }
+                else if (slot == 11) {
+                    try { player.openInventory(new RouletteMenu(this, accounts, player, menu.machine).getInventory()); }
+                    catch (IOException error) { ensureAccount(player); }
+                }
+                else if (slot == 10) {
+                    try { player.openInventory(new SlotMenu(this, accounts, player, menu.machine).getInventory()); }
+                    catch (IOException error) { ensureAccount(player); }
+                }
+            });
+            return;
+        }
+        if (event.getView().getTopInventory().getHolder() instanceof ItemShop shop) {
+            event.setCancelled(true);
+            if (!(event.getWhoClicked() instanceof Player player) || (event.getClick() != ClickType.LEFT && event.getClick() != ClickType.SHIFT_LEFT)) return;
+            boolean stack = event.getClick() == ClickType.SHIFT_LEFT;
+            int slot = event.getRawSlot();
+            Bukkit.getScheduler().runTask(this, () -> {
+                if (!player.isOnline() || player.getOpenInventory().getTopInventory().getHolder() != shop) return;
+                if (!canUseShop(player, shop.machine)) { player.closeInventory(); return; }
+                if (slot == 53) { player.openInventory(new ExchangeMenu(shop.machine, false).getInventory()); return; }
+                try { shop.buy(slot, player, accounts, stack); }
+                catch (IllegalArgumentException error) { player.sendMessage(error.getMessage()); }
+                catch (IOException error) {
+                    player.sendMessage("Speichern fehlgeschlagen. Es wurde nichts abgebucht.");
+                    getLogger().log(java.util.logging.Level.SEVERE, "Itemkauf fehlgeschlagen", error);
+                }
+            });
+            return;
+        }
         if (event.getView().getTopInventory().getHolder() instanceof ChipShop shop) {
             event.setCancelled(true);
             if (!(event.getWhoClicked() instanceof Player player) || (event.getClick() != ClickType.LEFT && event.getClick() != ClickType.RIGHT)) return;
@@ -425,6 +522,14 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         if (menu.selection) {
             event.setCancelled(true);
             if (event.getClick() != ClickType.LEFT && event.getClick() != ClickType.RIGHT) return;
+            if (raw == ExchangeMenu.TRANSFER_OPTION) {
+                Bukkit.getScheduler().runTask(this, () -> {
+                    if (!player.isOnline() || player.getOpenInventory().getTopInventory().getHolder() != menu || !canUseShop(player, menu.machine)) return;
+                    try { player.openInventory(new CasinoBankMenu(menu.machine, accounts, chips, player).getInventory()); }
+                    catch (IOException error) { player.sendMessage("Kontodaten konnten nicht geladen werden."); }
+                });
+                return;
+            }
             if (raw == ExchangeMenu.EXCHANGE_OPTION) {
                 Bukkit.getScheduler().runTask(this, () -> {
                     if (!player.isOnline() || player.getOpenInventory().getTopInventory().getHolder() != menu) return;
@@ -445,6 +550,15 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
             return;
         }
         if (raw < 0) return;
+        if (raw == ExchangeMenu.SHOP_OPTION) {
+            event.setCancelled(true);
+            if (event.getClick() == ClickType.LEFT || event.getClick() == ClickType.RIGHT)
+                Bukkit.getScheduler().runTask(this, () -> {
+                    if (player.isOnline() && player.getOpenInventory().getTopInventory().getHolder() == menu && canUseShop(player, menu.machine))
+                        player.openInventory(new ItemShop(menu.machine).getInventory());
+                });
+            return;
+        }
         if (event.getClick() == ClickType.DOUBLE_CLICK || event.getAction() == InventoryAction.COLLECT_TO_CURSOR) { event.setCancelled(true); return; }
         if (raw < 27) {
             if (raw != ExchangeRules.INPUT) {
@@ -490,8 +604,13 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     }
 
     @EventHandler public void drag(InventoryDragEvent event) {
+        if (event.getView().getTopInventory().getHolder() instanceof CasinoBankMenu) { event.setCancelled(true); return; }
+        if (event.getView().getTopInventory().getHolder() instanceof ItemShop) { event.setCancelled(true); return; }
         if (event.getView().getTopInventory().getHolder() instanceof ChipShop) { event.setCancelled(true); return; }
-        if (event.getView().getTopInventory().getHolder() instanceof SlotMenu) { event.setCancelled(true); return; }
+        if (event.getView().getTopInventory().getHolder() instanceof SlotMenu
+                || event.getView().getTopInventory().getHolder() instanceof GameSelection
+                || event.getView().getTopInventory().getHolder() instanceof RouletteMenu
+                || event.getView().getTopInventory().getHolder() instanceof FiveReelMenu) { event.setCancelled(true); return; }
         if (!(event.getView().getTopInventory().getHolder() instanceof ExchangeMenu menu)) return;
         if (menu.selection) { event.setCancelled(true); return; }
         for (int slot : event.getRawSlots()) {
@@ -503,6 +622,8 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     }
     @EventHandler public void close(InventoryCloseEvent event) {
         if (event.getInventory().getHolder() instanceof SlotMenu slots) slots.close();
+        if (event.getInventory().getHolder() instanceof RouletteMenu roulette) roulette.close();
+        if (event.getInventory().getHolder() instanceof FiveReelMenu reels) reels.close();
         if (event.getInventory().getHolder() instanceof ExchangeMenu menu && event.getPlayer() instanceof Player player) menu.returnInput(player);
     }
     @EventHandler public void quit(PlayerQuitEvent event) {
@@ -510,3 +631,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         if (event.getPlayer().getOpenInventory().getTopInventory().getHolder() instanceof ExchangeMenu menu) menu.returnInput(event.getPlayer());
     }
 }
+
+
+
+

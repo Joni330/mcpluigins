@@ -28,7 +28,7 @@ final class ChipShop implements InventoryHolder {
         return cents;
     }
     private void refresh() {
-        inventory.setItem(19, ExchangeMenu.icon(Material.PAPER, Money.format(total()) + " in Chips tauschen"));
+        inventory.setItem(19, ExchangeMenu.icon(Material.PAPER, Money.format(total()) + " Casino-Guthaben in Chips tauschen"));
         for (int i = 0; i < 4; i++) {
             int slot = 15 + i * 9;
             Chips.Kind kind = Chips.Kind.values()[i];
@@ -72,7 +72,7 @@ final class ChipShop implements InventoryHolder {
             if (remaining > 0) { player.sendMessage("Nicht genug Platz im Inventar. Es wurde nichts abgebucht."); return; }
         }
         accounts.balance(player);
-        accounts.debit(player.getUniqueId(), cost);
+        accounts.changeCasino(player.getUniqueId(), -cost, "Chips gekauft");
         purchased = true;
         player.getInventory().setStorageContents(next);
         player.closeInventory();
@@ -80,3 +80,5 @@ final class ChipShop implements InventoryHolder {
     }
     @Override public Inventory getInventory() { return inventory; }
 }
+
+

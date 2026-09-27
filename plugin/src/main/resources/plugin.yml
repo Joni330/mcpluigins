@@ -4,6 +4,15 @@ main: de.casino.CasinoPlugin
 api-version: '26.3'
 description: Casino-Konten, Wechselautomaten und Kistenmenü
 commands:
+  menu:
+    description: Hauptmenü für Konto, Team, Casino und Lagerhilfe
+    usage: /menu
+  lagerteam:
+    description: Freunde zum gemeinsamen Lagerteam einladen
+    usage: /lagerteam
+  lager:
+    description: Lagerterminal im Casino-Plugin
+    usage: /lager [give|handy|sender|zuordnen]
   payload:
     description: Als Admin Casino-Guthaben gutschreiben
     usage: /payload <Spieler> <Betrag>
