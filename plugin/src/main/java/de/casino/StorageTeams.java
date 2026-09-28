@@ -13,6 +13,18 @@ final class StorageTeams {
         if (Files.exists(file)) data.load(file.toFile());
     }
     String team(UUID player) { return data.getString("members." + player); }
+    void setHome(UUID player, HomeData.Point point) throws IOException {
+        String team = team(player);
+        if (team == null) throw new IllegalArgumentException("Du bist in keinem Team.");
+        commit(d -> { d.set("teams." + team + ".home", null); d.createSection("teams." + team + ".home", point.values()); });
+    }
+    HomeData.Point home(UUID player) {
+        String team = team(player);
+        if (team == null) throw new IllegalArgumentException("Du bist in keinem Team.");
+        var section = data.getConfigurationSection("teams." + team + ".home");
+        if (section == null) throw new IllegalArgumentException("Dein Team hat noch kein Home. Nutze /setteamhome.");
+        return HomeData.Point.read(section.getValues(false));
+    }
     boolean shares(UUID owner, UUID player) {
         if (owner.equals(player)) return true;
         String team = team(owner);

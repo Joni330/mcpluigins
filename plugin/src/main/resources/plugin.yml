@@ -4,6 +4,21 @@ main: de.casino.CasinoPlugin
 api-version: '26.3'
 description: Casino-Konten, Wechselautomaten und Kistenmenü
 commands:
+  sethome:
+    description: Eines deiner drei Homes setzen oder ersetzen
+    usage: /sethome <name>
+  home:
+    description: Zu einem Home reisen oder deine Homes auflisten
+    usage: /home <name|list>
+  delhome:
+    description: Ein persönliches Home löschen
+    usage: /delhome <name>
+  setteamhome:
+    description: Das gemeinsame Home deines Teams setzen
+    usage: /setteamhome
+  teamhome:
+    description: Zum Home deines aktuellen Teams reisen
+    usage: /teamhome
   bp:
     description: Deinen persönlichen Rucksack öffnen
     usage: /bp

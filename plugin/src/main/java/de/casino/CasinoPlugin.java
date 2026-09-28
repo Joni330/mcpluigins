@@ -26,6 +26,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     private StorageTerminals storageTerminals;
     private StorageTeams storageTeams;
     private MainMenu mainMenu;
+    private HomeData homeData;
     private Backpacks backpacks;
 
     @Override public void onEnable() {
@@ -37,6 +38,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         try {
             accounts = new Accounts(getDataFolder().toPath());
             storageTeams = new StorageTeams(getDataFolder().toPath());
+            homeData = new HomeData(getDataFolder().toPath());
         }
         catch (Exception error) {
             getLogger().log(java.util.logging.Level.SEVERE, "Kontodaten konnten nicht geladen werden.", error);
@@ -62,6 +64,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         backpacks.enable();
         mainMenu = new MainMenu(this, accounts, storageTeams, backpacks);
         mainMenu.enable();
+        new Homes(this, homeData, storageTeams).enable();
         Bukkit.getOnlinePlayers().forEach(player -> player.discoverRecipes(List.of(recipeKey, slotRecipeKey)));
         Bukkit.getOnlinePlayers().forEach(this::ensureAccount);
         // Schließen, wenn Spieler den Automaten verlassen oder dieser entladen wird.
