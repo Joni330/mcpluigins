@@ -15,19 +15,23 @@ final class MainMenu implements Listener {
     private final JavaPlugin plugin;
     private final Accounts accounts;
     private final StorageTeams teams;
+    private final Backpacks backpacks;
     private static final class Page implements InventoryHolder {
         final UUID owner;
         final String section;
         final int offset;
         final Inventory inventory;
+        int upgradeRows;
+        long upgradePrice;
         Page(Player player, String section, int offset) {
             owner = player.getUniqueId(); this.section = section; this.offset = offset;
             inventory = Bukkit.createInventory(this, 54, Component.text("Menü · " + section));
         }
         @Override public Inventory getInventory() { return inventory; }
     }
-    MainMenu(JavaPlugin plugin, Accounts accounts, StorageTeams teams) {
+    MainMenu(JavaPlugin plugin, Accounts accounts, StorageTeams teams, Backpacks backpacks) {
         this.plugin = plugin; this.accounts = accounts; this.teams = teams;
+        this.backpacks = backpacks;
     }
     void enable() {
         Bukkit.getPluginManager().registerEvents(this, plugin);
@@ -58,6 +62,22 @@ final class MainMenu implements Listener {
                 icon(page, 22, Material.PLAYER_HEAD, "Team", "Mitglieder und Teamverwaltung");
                 icon(page, 24, Material.BARREL, "Lager & Farmen", "Lager-Handy, Sender und Filter");
                 icon(page, 32, Material.BOOK, "Hilfe", "Die wichtigsten Befehle");
+                icon(page, 30, Material.CHEST, "Rucksack Upgrades", "Mehr Platz für deinen persönlichen Rucksack", "Öffnen mit /bp");
+            }
+            case "Rucksack Upgrades" -> {
+                try {
+                    long balance = accounts.balance(player);
+                    int rows = accounts.backpackRows(player.getUniqueId());
+                    icon(page, 20, Material.GOLD_INGOT, "Hauptkonto: " + Money.format(balance));
+                    icon(page, 24, Material.CHEST, "Rucksack öffnen", rows + " Reihen · " + (rows * 9) + " Plätze", "Auch mit /bp erreichbar");
+                    if (rows < 6) {
+                        page.upgradeRows = rows; page.upgradePrice = backpacks.price(rows);
+                        icon(page, 22, Material.LIME_STAINED_GLASS_PANE, "Nächste Reihe kaufen · " + Money.format(page.upgradePrice),
+                                rows + " → " + (rows + 1) + " Reihen", "+9 Plätze · dauerhaft", "Linksklick: vom Hauptkonto bezahlen");
+                    } else icon(page, 22, Material.GOLD_BLOCK, "Rucksack vollständig ausgebaut", "6 Reihen · 54 Plätze");
+                } catch (IOException | IllegalArgumentException | IllegalStateException error) {
+                    player.sendMessage("Rucksack-Upgrades konnten nicht geladen werden."); return;
+                }
             }
             case "Konto" -> {
                 try {
@@ -143,6 +163,22 @@ final class MainMenu implements Listener {
                     else if (slot == 22) open(p, "Team", 0);
                     else if (slot == 24) open(p, "Lager & Farmen", 0);
                     else if (slot == 32) open(p, "Hilfe", 0);
+                    else if (slot == 30) open(p, "Rucksack Upgrades", 0);
+                }
+                case "Rucksack Upgrades" -> {
+                    if (slot == 24) backpacks.open(p);
+                    else if (slot == 22 && page.upgradeRows > 0) {
+                        try {
+                            if (backpacks.price(page.upgradeRows) != page.upgradePrice) {
+                                open(p, "Rucksack Upgrades", 0); return;
+                            }
+                            accounts.upgradeBackpack(p.getUniqueId(), page.upgradeRows, page.upgradePrice);
+                            p.sendMessage("Rucksack erweitert: " + ((page.upgradeRows + 1) * 9) + " Plätze!");
+                            p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, .6f, 1.2f);
+                            open(p, "Rucksack Upgrades", 0);
+                        } catch (IllegalArgumentException error) { p.sendMessage(error.getMessage()); }
+                        catch (IOException error) { p.sendMessage("Speichern fehlgeschlagen. Kein Upgrade gekauft und kein Geld abgebucht."); }
+                    }
                 }
                 case "Konto" -> { if (slot == 49) open(p, "Konto", 0); else if (slot == 31) suggest(p, "/pay "); else if (slot == 22) open(p, "Kontoverlauf", 0); }
                 case "Kontoverlauf" -> {

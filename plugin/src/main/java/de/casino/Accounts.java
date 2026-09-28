@@ -78,6 +78,23 @@ final class Accounts {
     }
 
     long lastPayout(Player player) { return data.getLong(player.getUniqueId() + ".last-payout", 0L); }
+    int backpackRows(UUID player) {
+        int rows = data.getInt(player + ".backpack-rows", 1);
+        if (rows < 1 || rows > 6) throw new IllegalStateException("Ungültige Rucksackgröße");
+        return rows;
+    }
+    void upgradeBackpack(UUID player, int expectedRows, long price) throws IOException {
+        int rows = backpackRows(player);
+        if (rows != expectedRows || rows >= 6 || price <= 0) throw new IllegalArgumentException("Dieses Upgrade ist nicht verfügbar.");
+        String balanceKey = player + ".balance", rowsKey = player + ".backpack-rows";
+        if (!data.contains(balanceKey)) throw new IllegalArgumentException("Konto nicht gefunden.");
+        long before = data.getLong(balanceKey);
+        if (before < price) throw new IllegalArgumentException("Nicht genügend Geld auf deinem Hauptkonto.");
+        Object oldRows = data.get(rowsKey);
+        data.set(rowsKey, rows + 1); data.set(balanceKey, before - price);
+        try { saveHistory(new Booking(player, "Rucksack auf " + (rows + 1) + " Reihen erweitert", -price, before - price, 0, 0)); }
+        catch (IOException error) { data.set(rowsKey, oldRows); data.set(balanceKey, before); throw error; }
+    }
     void debit(UUID player, long cents) throws IOException { debit(player, cents, "Abbuchung"); }
 
     void debit(java.util.UUID player, long cents, String reason) throws IOException {

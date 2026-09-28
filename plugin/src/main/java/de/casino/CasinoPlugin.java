@@ -26,6 +26,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     private StorageTerminals storageTerminals;
     private StorageTeams storageTeams;
     private MainMenu mainMenu;
+    private Backpacks backpacks;
 
     @Override public void onEnable() {
         itemKey = new NamespacedKey(this, "exchange_item");
@@ -57,7 +58,9 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         Objects.requireNonNull(getCommand("lagerteam")).setTabCompleter(teamCommand);
         storageTerminals = new StorageTerminals(this, storageTeams);
         storageTerminals.enable();
-        mainMenu = new MainMenu(this, accounts, storageTeams);
+        backpacks = new Backpacks(this, accounts);
+        backpacks.enable();
+        mainMenu = new MainMenu(this, accounts, storageTeams, backpacks);
         mainMenu.enable();
         Bukkit.getOnlinePlayers().forEach(player -> player.discoverRecipes(List.of(recipeKey, slotRecipeKey)));
         Bukkit.getOnlinePlayers().forEach(this::ensureAccount);
@@ -83,6 +86,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     }
 
     @Override public void onDisable() {
+        if (backpacks != null) backpacks.disable();
         for (Player p : Bukkit.getOnlinePlayers()) if (p.getOpenInventory().getTopInventory().getHolder() instanceof CasinoBankMenu) p.closeInventory();
         if (mainMenu != null) mainMenu.disable();
         for (Player p : Bukkit.getOnlinePlayers()) if (p.getOpenInventory().getTopInventory().getHolder() instanceof FiveReelMenu reels) { reels.close(); p.closeInventory(); }
@@ -116,6 +120,9 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         }
     }
     @EventHandler public void join(PlayerJoinEvent event) {
+        event.getPlayer().sendMessage(Component.text("Willkommen, " + event.getPlayer().getName() + "! ", NamedTextColor.GREEN)
+                .append(Component.text("Mit /menu öffnest du dein Menü.", NamedTextColor.YELLOW)
+                        .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/menu"))));
         ensureAccount(event.getPlayer());
         event.getPlayer().discoverRecipes(List.of(recipeKey, slotRecipeKey));
     }

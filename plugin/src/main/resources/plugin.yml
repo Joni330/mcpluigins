@@ -4,6 +4,9 @@ main: de.casino.CasinoPlugin
 api-version: '26.3'
 description: Casino-Konten, Wechselautomaten und Kistenmenü
 commands:
+  bp:
+    description: Deinen persönlichen Rucksack öffnen
+    usage: /bp
   menu:
     description: Hauptmenü für Konto, Team, Casino und Lagerhilfe
     usage: /menu
