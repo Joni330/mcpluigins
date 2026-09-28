@@ -8,15 +8,24 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import java.util.*;
 import java.io.IOException;
 
-final class Homes implements CommandExecutor, TabCompleter {
+final class Homes implements CommandExecutor, TabCompleter, org.bukkit.event.Listener {
     private final JavaPlugin plugin;
     private final HomeData data;
     private final StorageTeams teams;
     Homes(JavaPlugin plugin, HomeData data, StorageTeams teams) { this.plugin = plugin; this.data = data; this.teams = teams; }
     void enable() {
-        for (String name : List.of("sethome", "home", "delhome", "setteamhome", "teamhome")) {
+        Bukkit.getPluginManager().registerEvents(this, plugin);
+        for (String name : List.of("sethome", "home", "delhome", "setteamhome", "teamhome", "back")) {
             var command = Objects.requireNonNull(plugin.getCommand(name));
             command.setExecutor(this); command.setTabCompleter(this);
+        }
+    }
+    @org.bukkit.event.EventHandler(priority = org.bukkit.event.EventPriority.MONITOR, ignoreCancelled = true)
+    public void death(org.bukkit.event.entity.PlayerDeathEvent event) {
+        try { data.death(event.getEntity().getUniqueId(), point(event.getEntity())); }
+        catch (IOException error) {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Todespunkt konnte nicht gespeichert werden", error);
+            event.getEntity().sendMessage("Dein neuer Todespunkt konnte nicht gespeichert werden.");
         }
     }
     private HomeData.Point point(Player player) {
@@ -26,10 +35,11 @@ final class Homes implements CommandExecutor, TabCompleter {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) { sender.sendMessage("Bitte im Spiel ausführen."); return true; }
         String cmd = command.getName();
-        boolean teamCommand = cmd.equals("teamhome") || cmd.equals("setteamhome");
+        boolean teamCommand = cmd.equals("teamhome") || cmd.equals("setteamhome") || cmd.equals("back");
         if (args.length != (teamCommand ? 0 : 1)) return false;
         try {
             switch (cmd) {
+                case "back" -> teleport(player, data.death(player.getUniqueId()), "Todespunkt");
                 case "sethome" -> {
                     data.set(player.getUniqueId(), args[0], point(player));
                     player.sendMessage("Home '" + HomeData.name(args[0]) + "' gespeichert (" + data.list(player.getUniqueId()).size() + "/3).");
@@ -49,13 +59,16 @@ final class Homes implements CommandExecutor, TabCompleter {
         return true;
     }
     private void teleport(Player player, HomeData.Point point) {
+        teleport(player, point, "Home");
+    }
+    private void teleport(Player player, HomeData.Point point, String target) {
         World world = Bukkit.getWorld(point.world());
-        if (world == null) { player.sendMessage("Die Welt dieses Homes ist nicht geladen."); return; }
+        if (world == null) { player.sendMessage("Die Welt für dieses Ziel ist nicht geladen."); return; }
         Location destination = new Location(world, point.x(), point.y(), point.z(), point.yaw(), point.pitch());
         if (!world.getWorldBorder().isInside(destination) || point.y() < world.getMinHeight() || point.y() >= world.getMaxHeight()) {
-            player.sendMessage("Dieses Home liegt außerhalb der Weltgrenzen."); return;
+            player.sendMessage("Dieses Ziel liegt außerhalb der Weltgrenzen."); return;
         }
-        if (player.teleport(destination, PlayerTeleportEvent.TeleportCause.COMMAND)) player.sendMessage("Zum Home teleportiert.");
+        if (player.teleport(destination, PlayerTeleportEvent.TeleportCause.COMMAND)) player.sendMessage("Zum " + target + " teleportiert.");
         else player.sendMessage("Teleportation wurde verhindert.");
     }
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {

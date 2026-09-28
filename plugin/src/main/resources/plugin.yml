@@ -4,6 +4,9 @@ main: de.casino.CasinoPlugin
 api-version: '26.3'
 description: Casino-Konten, Wechselautomaten und Kistenmenü
 commands:
+  back:
+    description: Zu deinem letzten Todespunkt teleportieren
+    usage: /back
   sethome:
     description: Eines deiner drei Homes setzen oder ersetzen
     usage: /sethome <name>

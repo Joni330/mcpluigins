@@ -6,6 +6,16 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class HomesTest {
+    @Test void deathReplacesPreviousAndSurvivesRestartWithoutUsingHomeSlots(@TempDir Path dir) throws Exception {
+        HomeData homes = new HomeData(dir); UUID player = UUID.randomUUID();
+        assertThrows(IllegalArgumentException.class, () -> homes.death(player));
+        homes.death(player, point);
+        HomeData.Point next = new HomeData.Point(UUID.randomUUID(), 50, 80, -10, 20, 30);
+        homes.death(player, next);
+        assertEquals(next, new HomeData(dir).death(player));
+        assertTrue(homes.list(player).isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> homes.death(UUID.randomUUID()));
+    }
     final HomeData.Point point = new HomeData.Point(UUID.randomUUID(), 1.5, 70, -20, 90, 10);
     @Test void limitReplaceDeleteAndRestart(@TempDir Path dir) throws Exception {
         UUID id = UUID.randomUUID(); HomeData homes = new HomeData(dir);

@@ -43,6 +43,12 @@ final class HomeData {
     void delete(UUID player, String name) throws IOException {
         get(player, name); edit(player + "." + name(name), null);
     }
+    void death(UUID player, Point point) throws IOException { edit("deaths." + player, point.values()); }
+    Point death(UUID player) {
+        var section = data.getConfigurationSection("deaths." + player);
+        if (section == null) throw new IllegalArgumentException("Für dich ist noch kein Todespunkt gespeichert.");
+        return Point.read(section.getValues(false));
+    }
     private void edit(String key, Object value) throws IOException {
         YamlConfiguration next = new YamlConfiguration();
         try { next.loadFromString(data.saveToString()); } catch (Exception error) { throw new IOException(error); }
