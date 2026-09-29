@@ -278,7 +278,7 @@ final class MiningBots implements Listener {
             icon(page, 6, Material.RED_WOOL, "Stop / Zurückrufen", "Sofort zur Basis teleportieren und entladen", "Danach bleibt der Bot an der Basis.");
             icon(page, 18, Material.TORCH, "Fackeln platzieren: " + (page.bot.lighting.enabled() ? "AN" : "AUS"),
                     "Klicken: ein-/ausschalten", "Etwa alle 8 Tunnelblöcke eine Fackel",
-                    "Normale Fackeln ins Bot-Lager legen", "Bei AN bleibt der Vorrat beim Entladen im Bot.");
+                    "Erstellt Fackeln ohne Vorrat", "Vorhandene Fackeln in der Nähe werden übersprungen.");
             icon(page, 4, Material.PAPER, "Status: " + page.bot.status, "Entfernung: " + page.bot.work.distance() + " Blöcke",
                     "Restenergie: " + page.bot.work.energy() + " Abbauschritte");
             icon(page, 26, Material.BARRIER, "Schließen");
@@ -570,16 +570,19 @@ final class MiningBots implements Listener {
         bot.work = bot.work.moved(); bot.status = "Fahre vor · " + bot.work.distance() + " Blöcke";
         if (save(bot, bot.items)) { moveVisual(bot); placeTorch(bot, operator); }
     }
-    private boolean torchSupply(Bot bot, ItemStack item) {
-        return bot.lighting.enabled() && !BotInventory.empty(item) && item.getType() == Material.TORCH;
-    }
     private void placeTorch(Bot bot, Player operator) {
         int distance = bot.work.distance();
         if (!bot.lighting.due(distance)) return;
-        int slot = -1;
-        for (int i = CARGO; i < SIZE; i++) if (torchSupply(bot, bot.items[i])) { slot = i; break; }
-        if (slot < 0) { bot.status += " · Fackelvorrat leer"; return; }
         int dx = MiningBotWork.dx(bot.base.yaw()), dz = MiningBotWork.dz(bot.base.yaw());
+        // Include hanging wall torches at every tunnel height, up to three blocks along the route.
+        for (int along = -3; along <= 3; along++) for (int side = -2; side <= 2; side++) {
+            int x = bot.base.x() + dx * (distance + along) + dz * side;
+            int z = bot.base.z() + dz * (distance + along) - dx * side;
+            if (!world(bot).isChunkLoaded(x >> 4, z >> 4)) continue;
+            for (int height = 0; height <= 2; height++) if (isTorch(world(bot).getBlockAt(x, bot.base.y() + height, z).getType())) {
+                bot.lighting = bot.lighting.placed(distance); save(bot, bot.items); return;
+            }
+        }
         // Place beside the bot on an existing floor; never replace liquids or force-load a chunk.
         for (int side : new int[]{1, -1}) {
             int x = bot.base.x() + dx * distance + dz * side, z = bot.base.z() + dz * distance - dx * side;
@@ -593,11 +596,8 @@ final class MiningBots implements Listener {
             BlockPlaceEvent event = new BlockPlaceEvent(target, previous, floor, new ItemStack(Material.TORCH), operator, true, EquipmentSlot.HAND);
             Bukkit.getPluginManager().callEvent(event);
             if (event.isCancelled() || !event.canBuild() || target.getType() != Material.TORCH) { previous.update(true, false); continue; }
-            ItemStack[] next = BotInventory.copy(bot.items);
-            next[slot].setAmount(next[slot].getAmount() - 1);
-            if (BotInventory.empty(next[slot])) next[slot] = null;
             bot.lighting = bot.lighting.placed(distance);
-            if (!save(bot, next)) previous.update(true, false);
+            if (!save(bot, bot.items)) previous.update(true, false);
             return;
         }
     }
@@ -625,7 +625,7 @@ final class MiningBots implements Listener {
     }
     private void unload(Bot bot) {
         if (!loaded(bot) || bot.failed || bot.work.distance() != 0 || base(bot).getBlock().getType() != Material.POWERED_RAIL) return;
-        boolean cargo = false; for (int i = CARGO; i < SIZE; i++) cargo |= !BotInventory.empty(bot.items[i]) && !torchSupply(bot, bot.items[i]);
+        boolean cargo = false; for (int i = CARGO; i < SIZE; i++) cargo |= !BotInventory.empty(bot.items[i]);
         if (!cargo) {
             bot.unloading = false;
             if (bot.work.phase() == MiningBotWork.Phase.UNLOADING) bot.work = bot.work.emptied();
@@ -644,7 +644,7 @@ final class MiningBots implements Listener {
         if (chest == null) { bot.status = "Warte auf Kiste direkt neben Basisschiene"; return; }
         Inventory destination = chest.getBlockInventory();
         for (int slot = CARGO; slot < SIZE; slot++) {
-            ItemStack offered = bot.items[slot]; if (BotInventory.empty(offered) || torchSupply(bot, offered)) continue;
+            ItemStack offered = bot.items[slot]; if (BotInventory.empty(offered)) continue;
             Inventory source = Bukkit.createInventory(null, 27);
             source.setContents(Arrays.copyOfRange(BotInventory.copy(bot.items), CARGO, SIZE));
             InventoryMoveItemEvent transfer = new InventoryMoveItemEvent(source, offered.clone(), destination, true);

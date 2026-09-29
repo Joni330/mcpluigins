@@ -19,9 +19,17 @@ class ExchangeRulesTest {
         assertTrue(ExchangeRules.accepts(Material.GOLD_INGOT));
         assertTrue(ExchangeRules.accepts(Material.DIAMOND));
         assertTrue(ExchangeRules.accepts(Material.EMERALD));
-        assertEquals(6, ExchangeRules.ACCEPTED.size());
+        assertEquals(8, ExchangeRules.ACCEPTED.size());
+        assertTrue(ExchangeRules.accepts(Material.REDSTONE));
+        assertTrue(ExchangeRules.accepts(Material.LAPIS_LAZULI));
         assertTrue(ExchangeRules.accepts(Material.NETHERITE_INGOT));
         assertFalse(ExchangeRules.accepts(Material.PAPER));
         assertFalse(ExchangeRules.accepts(Material.GOLD_BLOCK));
+    }
+    @Test void redstoneAndLapisSellForTwoEurosEach() {
+        for (Material material : new Material[]{Material.REDSTONE, Material.LAPIS_LAZULI}) {
+            assertEquals(200, ExchangeRules.payout(material, 1));
+            assertEquals(12800, ExchangeRules.payout(material, 64));
+        }
     }
 }

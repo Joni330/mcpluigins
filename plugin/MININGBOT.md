@@ -33,7 +33,7 @@ Im Bot-Lager startet der Trichter unten das Entladen beziehungsweise den Rückru
 
 ### Fackeln
 
-Im Terminal schaltet das Fackelsymbol unten links die automatische Beleuchtung pro Bot ein oder aus (anfangs aus). Normale Fackeln ins Bot-Lager legen. Bei aktivierter Funktion platziert der Bot etwa alle acht Blöcke Vorwärtsfortschritt seitlich eine Bodenfackel und verbraucht dafür eine Fackel. Er benötigt freien, trockenen Platz und einen vollen Bodenblock; fehlende Fackeln oder ein ungeeigneter Platz stoppen den Abbau nicht. Platzierung beachtet BlockPlaceEvent-Schutz. Ein vorhandenes Licht am vorgesehenen Platz wird angerechnet. Einstellung und letzte Fackelposition werden gespeichert, damit der Bot beim erneuten Durchfahren keine doppelten Fackeln setzt. Bei aktivierter Funktion bleiben normale Fackeln beim Entladen als Vorrat im Bot. Nach Ausschalten werden sie mit entladen.
+Im Terminal schaltet das Fackelsymbol unten links die automatische Beleuchtung pro Bot ein oder aus (anfangs aus). Der Bot erstellt kostenlos etwa alle acht Blöcke Vorwärtsfortschritt eine Bodenfackel, ohne Vorrat oder Itemverbrauch. Vorher sucht er im Tunnel bis drei Blöcke vor und hinter sich, über die gesamte Tunnelhöhe und seitlich bis zwei Blöcke nach vorhandenen Fackeln einschließlich Wandvarianten. Findet er eine, überspringt er die Platzierung und fährt weiter. Freier, trockener Platz und ein voller Bodenblock sind nötig; fehlender Platz stoppt den Abbau nicht. Platzierung beachtet BlockPlaceEvent-Schutz. Einstellung und letzte geprüfte Fackelposition werden gespeichert, damit der Bot beim erneuten Durchfahren keine doppelten Fackeln setzt. Fackeln im Bot-Lager werden wie andere Items entladen.
 
 Alle normalen, Seelen- und Redstone-Fackeln, einschließlich Wandvarianten, gelten beim Abbau als freier Durchgang und werden nicht gezielt abgebaut. Minecraft kann bestehende Wandfackeln weiterhin ablösen, wenn deren tragender Block abgebaut wird.
 
@@ -56,3 +56,4 @@ Die Datei `plugins/Casino/miningbots/<Bot-UUID>.yml` speichert Basis, Besitzer, 
 Admin-Test: `/miningbot give` gibt das neue funktionale Basis-Item. Alte `/miningbot design`-Entwürfe haben weiterhin keine Menüs und können mit `/miningbot entfernen` entfernt werden. Neu craften oder das Give-Item verwenden.
 
 Live-Prüfung: Platzieren in vier Richtungen, Terminal, Start/Rückruf, gemischter Stein-Erde-Tunnel, Werkzeugverschleiß, Brennstoffmangel, Lava/Wasser, nachfallender Sand/Kies, Schutzgebiete, volle/fehlende Basiskiste, automatische Rückfahrt und Fortsetzen, Chunkwechsel und Neustart während des Abbaus. Kein Resourcepack-Update erforderlich. Automatisierte Tests ersetzen diesen Ingame-Test nicht.
+
