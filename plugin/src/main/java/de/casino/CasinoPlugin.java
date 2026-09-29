@@ -55,6 +55,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         Objects.requireNonNull(getCommand("payload")).setExecutor(this);
         Objects.requireNonNull(getCommand("payload")).setTabCompleter(this);
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(new AnvilImprovements(), this);
         chips = new Chips(this);
         getServer().getPluginManager().registerEvents(chips, this);
         registerMachineRecipe();
