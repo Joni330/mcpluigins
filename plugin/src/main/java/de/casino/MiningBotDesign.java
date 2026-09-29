@@ -20,17 +20,20 @@ final class MiningBotDesign implements Listener {
     private final JavaPlugin plugin;
     private final NamespacedKey marker;
     private final MiningBots bots;
-    MiningBotDesign(JavaPlugin plugin, MiningBots bots) { this.plugin = plugin; this.bots = bots; marker = new NamespacedKey(plugin, "miningbot_design"); }
+    private final AdvancedMiningBots upgrades;
+    MiningBotDesign(JavaPlugin plugin, MiningBots bots, AdvancedMiningBots upgrades) { this.plugin = plugin; this.bots = bots; this.upgrades=upgrades; marker = new NamespacedKey(plugin, "miningbot_design"); }
     private boolean marked(Entity entity) { return entity.getPersistentDataContainer().has(marker, PersistentDataType.BYTE); }
     private void mark(Entity entity) { entity.getPersistentDataContainer().set(marker, PersistentDataType.BYTE, (byte) 1); entity.setPersistent(true); }
     void enable() {
         Bukkit.getPluginManager().registerEvents(this, plugin);
         var command = Objects.requireNonNull(plugin.getCommand("miningbot"));
-        command.setTabCompleter((s,c,a,args) -> args.length == 1 ? List.of("give", "design", "entfernen").stream().filter(v -> v.startsWith(args[0].toLowerCase(Locale.ROOT))).toList() : List.of());
+        command.setTabCompleter((s,c,a,args) -> args.length == 1 ? List.of("give", "steinbruch", "erzsucher", "design", "entfernen").stream().filter(v -> v.startsWith(args[0].toLowerCase(Locale.ROOT))).toList() : List.of());
         command.setExecutor((sender, cmd, label, args) -> {
             if (!(sender instanceof Player player)) { sender.sendMessage("Bitte im Spiel ausführen."); return true; }
             if (args.length != 1) return false;
             if (args[0].equalsIgnoreCase("give")) { bots.give(player); return true; }
+            if (args[0].equalsIgnoreCase("steinbruch")) { upgrades.give(player,AdvancedBotData.Kind.QUARRY); return true; }
+            if (args[0].equalsIgnoreCase("erzsucher")) { upgrades.give(player,AdvancedBotData.Kind.SEEKER); return true; }
             if (args[0].equalsIgnoreCase("entfernen")) {
                 var hit = player.getWorld().rayTraceEntities(player.getEyeLocation(), player.getEyeLocation().getDirection(), 6, .35, e -> marked(e) || bots.isPart(e));
                 if (hit == null || hit.getHitEntity() == null) { player.sendMessage("Schaue einen MiningBot-Entwurf in deiner Nähe an."); return true; }

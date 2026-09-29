@@ -28,6 +28,8 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     private MainMenu mainMenu;
     private Elevators elevators;
     private MiningBots miningBots;
+    private AdvancedMiningBots advancedMiningBots;
+    private BotAlerts botAlerts;
     private HomeData homeData;
     private Backpacks backpacks;
 
@@ -42,6 +44,9 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
             storageTeams = new StorageTeams(getDataFolder().toPath());
             homeData = new HomeData(getDataFolder().toPath());
             miningBots = new MiningBots(this, storageTeams);
+            botAlerts = new BotAlerts(this);
+            miningBots.alerts(botAlerts);
+            advancedMiningBots = new AdvancedMiningBots(this, storageTeams, miningBots, botAlerts);
         }
         catch (Exception error) {
             getLogger().log(java.util.logging.Level.SEVERE, "Kontodaten konnten nicht geladen werden.", error);
@@ -62,7 +67,8 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         elevators = new Elevators(this);
         elevators.enable();
         miningBots.enable();
-        new MiningBotDesign(this, miningBots).enable();
+        advancedMiningBots.enable();
+        new MiningBotDesign(this, miningBots, advancedMiningBots).enable();
         StorageTeamCommand teamCommand = new StorageTeamCommand(storageTeams);
         Objects.requireNonNull(getCommand("lagerteam")).setExecutor(teamCommand);
         Objects.requireNonNull(getCommand("lagerteam")).setTabCompleter(teamCommand);
@@ -97,6 +103,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     }
 
     @Override public void onDisable() {
+        if (advancedMiningBots != null) advancedMiningBots.disable();
         if (miningBots != null) miningBots.disable();
         if (elevators != null) elevators.disable();
         if (backpacks != null) backpacks.disable();

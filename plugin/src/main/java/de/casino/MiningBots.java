@@ -33,6 +33,10 @@ final class MiningBots implements Listener {
     private final Map<UUID, List<Entity>> visuals = new HashMap<>();
     private final Map<UUID, List<Entity>> terminals = new HashMap<>();
     private boolean stopping;
+    private java.util.function.Predicate<Block> extraProtection = block -> false;
+    private BotAlerts alerts;
+    void extraProtection(java.util.function.Predicate<Block> protection) { extraProtection=protection; }
+    void alerts(BotAlerts alerts) { this.alerts=alerts; }
     private static final class Bot {
         final MiningBotStore.Saved base;
         ItemStack[] items;
@@ -80,7 +84,7 @@ final class MiningBots implements Listener {
         bots.values().stream().filter(this::loaded).forEach(this::spawn);
         Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 10, 10);
     }
-    private ItemStack item() {
+    ItemStack item() {
         ItemStack item = ExchangeMenu.icon(Material.FURNACE_MINECART, "MiningBot");
         var meta = item.getItemMeta(); meta.getPersistentDataContainer().set(itemKey, PersistentDataType.BYTE, (byte) 1);
         meta.lore(List.of(Component.text("Rechtsklick auf Boden: Bot und Basisschiene setzen"),
@@ -292,7 +296,7 @@ final class MiningBots implements Listener {
                     "Klicken: ein-/ausschalten", "Füllt Luft in den drei Bodenblöcken unter dem Bot",
                     "Kostenlos · danach werden Fackeln geprüft");
             icon(page, 20, Material.DIAMOND_ORE, "Erzadern abbauen: " + (page.bot.veins.enabled() ? "AN" : "AUS"),
-                    "Klicken: ein-/ausschalten", "Boden und Decke prüfen · bis 64 Erze pro Fund", "Maximal 8 Blöcke vom Tunnel · Ersatzboden kostenlos");
+                    "Klicken: ein-/ausschalten", "Boden, Decke, links und rechts prüfen", "Bis 64 Erze pro Fund · maximal 8 Blöcke Entfernung");
         } else {
             int from = page.mode.equals("Brennstoff") ? FUEL : CARGO;
             for (int i = 0; i < 27; i++) page.inventory.setItem(i, cloneItem(page.bot.items[from + i]));
@@ -432,11 +436,16 @@ final class MiningBots implements Listener {
                 case IDLE -> { if (bot.unloading) unload(bot); }
             }
             refresh(bot);
+            if(alerts!=null) {
+                if(BotAlerts.blocked(bot.status)) alerts.report(bot.base.id(),bot.base.owner(),"MiningBot",bot.status);
+                else if(bot.status.startsWith("Baue")||bot.status.startsWith("3×3")||bot.status.startsWith("Fahre")) alerts.progressed(bot.base.id());
+            }
             } catch (Exception error) {
                 bot.failed = true; bot.status = "Bot-Fehler · sicher angehalten";
                 plugin.getLogger().log(java.util.logging.Level.SEVERE, "MiningBot angehalten: " + bot.base.id(), error);
             }
         }
+        if(alerts!=null)for(Bot bot:bots.values())if(BotAlerts.blocked(bot.status))alerts.report(bot.base.id(),bot.base.owner(),"MiningBot",bot.status);
     }
     private void returnForCargo(Bot bot) {
         bot.work = bot.work.recall(true); bot.unloading = false; bot.status = "Lager voll · Rückfahrt zum Entladen"; save(bot, bot.items);
@@ -694,6 +703,8 @@ final class MiningBots implements Listener {
         List<MiningBotVeins.Pos> seeds = new ArrayList<>();
         for (int height : new int[]{-2, 2}) for (int side = -1; side <= 1; side++)
             seeds.add(new MiningBotVeins.Pos(centre.x() + dz * side, centre.y() + height, centre.z() - dx * side));
+        for (int side : new int[]{-2, 2}) for (int height = -1; height <= 1; height++)
+            seeds.add(new MiningBotVeins.Pos(centre.x() + dz * side, centre.y() + height, centre.z() - dx * side));
         var found = MiningBotVeins.find(seeds, centre, dx, dz, p -> {
             World world = world(bot);
             if (p.y() < world.getMinHeight() || p.y() >= world.getMaxHeight() || !world.isChunkLoaded(p.x() >> 4, p.z() >> 4)
@@ -758,7 +769,7 @@ final class MiningBots implements Listener {
         Bukkit.getPluginManager().callEvent(event);
         return !event.isCancelled() && event.canBuild();
     }
-    private boolean correctTier(Material block, Material tool) {
+    boolean correctTier(Material block, Material tool) {
         String name = tool.name();
         if (name.startsWith("WOODEN_")) return !Tag.INCORRECT_FOR_WOODEN_TOOL.isTagged(block);
         if (name.startsWith("STONE_")) return !Tag.INCORRECT_FOR_STONE_TOOL.isTagged(block);
@@ -790,7 +801,7 @@ final class MiningBots implements Listener {
             save(bot, bot.items); return;
         }
         Chest chest = null;
-        // Deterministic: north, east, south, west. Only the adjacent half of a double chest is filled.
+        // Deterministic: north, east, south, west. Double chests use the combined inventory.
         for (BlockFace face : List.of(BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST)) {
             int x = bot.base.x() + face.getModX(), z = bot.base.z() + face.getModZ();
             if (!world(bot).isChunkLoaded(x >> 4, z >> 4)) continue;
@@ -799,7 +810,7 @@ final class MiningBots implements Listener {
             }
         }
         if (chest == null) { bot.status = "Warte auf Kiste direkt neben Basisschiene"; return; }
-        Inventory destination = chest.getBlockInventory();
+        Inventory destination = chest.getInventory();
         for (int slot = CARGO; slot < SIZE; slot++) {
             ItemStack offered = bot.items[slot]; if (BotInventory.empty(offered)) continue;
             Inventory source = Bukkit.createInventory(null, 27);
@@ -822,7 +833,7 @@ final class MiningBots implements Listener {
                 && bot.base.y() == block.getY() && bot.base.z() == block.getZ()) return bot;
         return null;
     }
-    private boolean protectedBlock(Block block) { return at(block) != null || at(block.getRelative(BlockFace.UP)) != null; }
+    boolean protectedBlock(Block block) { return at(block) != null || at(block.getRelative(BlockFace.UP)) != null || extraProtection.test(block); }
     @EventHandler(ignoreCancelled = true) public void breakBase(BlockBreakEvent event) {
         if (protectedBlock(event.getBlock())) { event.setCancelled(true); event.getPlayer().sendMessage("Erst den leeren Bot mit Schleichen + Rechtsklick abbauen."); }
     }

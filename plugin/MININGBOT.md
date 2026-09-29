@@ -25,7 +25,7 @@ Die Werkzeuge im Rezept sind Baumaterial. Die beiden nutzbaren Werkzeugplätze b
 
 ## Entladen
 
-Eine normale Kiste direkt nördlich, östlich, südlich oder westlich neben die Basisschiene auf gleicher Höhe stellen. Bei mehreren Kisten gilt diese Reihenfolge; bei einer Doppelkiste wird zunächst nur die direkt angrenzende Hälfte verwendet. Verschlossene Kisten werden nicht verwendet.
+Eine normale Kiste direkt nördlich, östlich, südlich oder westlich neben die Basisschiene auf gleicher Höhe stellen. Bei mehreren Kisten gilt diese Reihenfolge; bei einer Doppelkiste werden alle 54 Plätze beider Hälften verwendet. Verschlossene Kisten werden nicht verwendet.
 
 Im Bot-Lager startet der Trichter unten das Entladen beziehungsweise den Rückruf. Passt die nächste Blockausbeute nicht mehr vollständig ins Lager, fährt der Bot automatisch zurück, entlädt und setzt seine Arbeit fort. Er fährt dabei den bestehenden Tunnel erneut ab. Pro halber Sekunde wird bis zu ein Stapel übertragen. Fehlende oder volle Kisten lassen alle übrigen Items im Bot; er wartet an der Basis. Rückfahrt und Entladen benötigen keinen Brennstoff.
 
@@ -47,7 +47,7 @@ Die Einstellung bleibt bei Neustarts erhalten. Platzierungen beachten Weltgrenze
 
 ### Erzadern abbauen
 
-Das Diamanterz-Symbol im Terminal schaltet die Erz-Nachlese ein oder aus (anfangs aus). Nach einer freigelegten und erreichten Tunnelschicht werden die drei Bodenblöcke und drei Deckenblöcke geprüft. Ein Fund startet eine Suche über gemeinsame Blockflächen, nicht über diagonale Ecken. Normale und Tiefenschiefer-Erze derselben Sorte zählen zusammen. Unterstützt werden Kohle, Kupfer, Eisen, Gold, Redstone, Lapis, Diamant, Smaragd, Netherquarz, Nethergolderz und antiker Schrott.
+Das Diamanterz-Symbol im Terminal schaltet die Erz-Nachlese ein oder aus (anfangs aus). Nach einer freigelegten und erreichten Tunnelschicht werden jeweils drei Blöcke unten, oben, links und rechts geprüft (zwölf Prüfstellen insgesamt). Ein Fund startet eine Suche über gemeinsame Blockflächen, nicht über diagonale Ecken. Normale und Tiefenschiefer-Erze derselben Sorte zählen zusammen. Unterstützt werden Kohle, Kupfer, Eisen, Gold, Redstone, Lapis, Diamant, Smaragd, Netherquarz, Nethergolderz und antiker Schrott.
 
 Pro Fund werden höchstens 64 Erze vorgemerkt. Die Suche bleibt in einem Bereich, der maximal acht Blöcke in jeder Richtung über die untersuchte 3×3-Tunnelfläche hinausreicht. Der aktive Bot lädt den benötigten Suchbereich vorab. Die vorgemerkten Erze werden einzeln mit der Spitzhacke abgebaut, jeweils mit einer Energieeinheit und normalem Werkzeugverschleiß. Werkzeugstufe, Verzauberungen, vollständiger Platz für Drops und Schutzplugin-Prüfungen gelten wie beim normalen Abbau.
 

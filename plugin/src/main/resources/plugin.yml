@@ -6,7 +6,7 @@ description: Casino-Konten, Wechselautomaten und Kistenmenü
 commands:
   miningbot:
     description: MiningBot-Item erhalten oder einen Entwurf verwalten
-    usage: /miningbot <give|design|entfernen>
+    usage: /miningbot <give|steinbruch|erzsucher|design|entfernen>
     permission: casino.admin
   back:
     description: Zu deinem letzten Todespunkt teleportieren
