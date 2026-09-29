@@ -1,0 +1,4350 @@
+{
+  "meta": {
+    "format_version": "5.0",
+    "model_format": "java_block",
+    "box_uv": false
+  },
+  "name": "MiningBot · Ofenlore",
+  "model_identifier": "miningbot",
+  "resolution": {
+    "width": 128,
+    "height": 128
+  },
+  "elements": [
+    {
+      "name": "Unterboden",
+      "type": "cube",
+      "uuid": "5a39a0a3-757d-4f6f-90cf-9947548936c8",
+      "to": [
+        15,
+        4,
+        17
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        1,
+        2,
+        -1
+      ]
+    },
+    {
+      "name": "Rad",
+      "type": "cube",
+      "uuid": "6821df82-5281-4b81-81e9-6386dda80e45",
+      "to": [
+        3,
+        3,
+        4
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        1,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "Radnabe",
+      "type": "cube",
+      "uuid": "46db90a0-5ada-49e8-9719-6182d69cd72f",
+      "to": [
+        3.1,
+        2,
+        3
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        0.9,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "Rad",
+      "type": "cube",
+      "uuid": "30bf2830-e7a2-424f-a13d-3f759f0bad13",
+      "to": [
+        3,
+        3,
+        15
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        1,
+        0,
+        12
+      ]
+    },
+    {
+      "name": "Radnabe",
+      "type": "cube",
+      "uuid": "5489e2b0-3da7-4a0e-8372-59b371de1fc2",
+      "to": [
+        3.1,
+        2,
+        14
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        0.9,
+        1,
+        13
+      ]
+    },
+    {
+      "name": "Rad",
+      "type": "cube",
+      "uuid": "2260927f-cffe-4b8a-bf61-ec6efff458fb",
+      "to": [
+        15,
+        3,
+        4
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        13,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "Radnabe",
+      "type": "cube",
+      "uuid": "2c01ab59-7d82-45c9-87e6-644070b498e0",
+      "to": [
+        15.1,
+        2,
+        3
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        12.9,
+        1,
+        2
+      ]
+    },
+    {
+      "name": "Rad",
+      "type": "cube",
+      "uuid": "f0816651-1ad9-4c2f-94a9-5b1213a37eba",
+      "to": [
+        15,
+        3,
+        15
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        13,
+        0,
+        12
+      ]
+    },
+    {
+      "name": "Radnabe",
+      "type": "cube",
+      "uuid": "2009ad72-dc04-4d9a-8fd7-1f4af0d80ae7",
+      "to": [
+        15.1,
+        2,
+        14
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        12.9,
+        1,
+        13
+      ]
+    },
+    {
+      "name": "Seitenwand",
+      "type": "cube",
+      "uuid": "4e19f651-8f85-4157-a61a-5345fda550b0",
+      "to": [
+        2,
+        9,
+        17
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        0,
+        4,
+        -1
+      ]
+    },
+    {
+      "name": "Rand oben",
+      "type": "cube",
+      "uuid": "44d39f77-72e6-477f-afe1-c3343b1b25b3",
+      "to": [
+        2.25,
+        10,
+        17.5
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        -0.25,
+        9,
+        -1.5
+      ]
+    },
+    {
+      "name": "Seitenwand",
+      "type": "cube",
+      "uuid": "f00ebe82-78f4-4f16-a20d-48ea236e1fbc",
+      "to": [
+        16,
+        9,
+        17
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        14,
+        4,
+        -1
+      ]
+    },
+    {
+      "name": "Rand oben",
+      "type": "cube",
+      "uuid": "ea0ec671-b7c6-4316-b76c-8a5ae89db65e",
+      "to": [
+        16.25,
+        10,
+        17.5
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        13.75,
+        9,
+        -1.5
+      ]
+    },
+    {
+      "name": "Stirnwand",
+      "type": "cube",
+      "uuid": "bf22919d-9bb4-441d-84b5-7bae0957cd52",
+      "to": [
+        14,
+        9,
+        1
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        2,
+        4,
+        -1
+      ]
+    },
+    {
+      "name": "Rand Stirnseite",
+      "type": "cube",
+      "uuid": "7a82052f-5211-46fe-bc48-6fe616c643fb",
+      "to": [
+        14,
+        10,
+        1.25
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        2,
+        9,
+        -1.25
+      ]
+    },
+    {
+      "name": "Stirnwand",
+      "type": "cube",
+      "uuid": "f15b1abd-bc99-4f4f-a132-d9ae464475ab",
+      "to": [
+        14,
+        9,
+        17
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        2,
+        4,
+        15
+      ]
+    },
+    {
+      "name": "Rand Stirnseite",
+      "type": "cube",
+      "uuid": "28135855-3c86-4fa1-abf9-a4a0f4b2aa0c",
+      "to": [
+        14,
+        10,
+        17.25
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        2,
+        9,
+        14.75
+      ]
+    },
+    {
+      "name": "Niete vorne",
+      "type": "cube",
+      "uuid": "a987dd9c-a565-42e0-bcbf-1829913acc36",
+      "to": [
+        3.5,
+        7,
+        -0.95
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        2.5,
+        6,
+        -1.15
+      ]
+    },
+    {
+      "name": "Niete vorne",
+      "type": "cube",
+      "uuid": "492566c0-0d8d-41ca-8e86-e0fbbbfbb2d0",
+      "to": [
+        13.5,
+        7,
+        -0.95
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        12.5,
+        6,
+        -1.15
+      ]
+    },
+    {
+      "name": "Ofenkorpus",
+      "type": "cube",
+      "uuid": "fbc3d424-078b-45ae-bf14-e25b4e44354a",
+      "to": [
+        13,
+        18,
+        13
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            65,
+            1,
+            79,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            65,
+            1,
+            79,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            65,
+            1,
+            79,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            65,
+            1,
+            79,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            65,
+            1,
+            79,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            65,
+            1,
+            79,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        3,
+        7,
+        3
+      ]
+    },
+    {
+      "name": "Ofendeckel",
+      "type": "cube",
+      "uuid": "254bda59-0ee7-44f5-910e-85172054e908",
+      "to": [
+        13.2,
+        19,
+        13.2
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            17,
+            1,
+            31,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        2.8,
+        18,
+        2.8
+      ]
+    },
+    {
+      "name": "Obere Ofenöffnung",
+      "type": "cube",
+      "uuid": "046ba0a0-59a9-4731-9e60-a1c5ed0002d3",
+      "to": [
+        11.5,
+        16.5,
+        3
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            49,
+            1,
+            63,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        4.5,
+        15,
+        2.8
+      ]
+    },
+    {
+      "name": "Feueröffnung",
+      "type": "cube",
+      "uuid": "8f6c06de-0d26-4633-b12b-19561a9f547c",
+      "to": [
+        11.5,
+        14,
+        3
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            81,
+            1,
+            95,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            81,
+            1,
+            95,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            81,
+            1,
+            95,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            81,
+            1,
+            95,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            81,
+            1,
+            95,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            81,
+            1,
+            95,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        4.5,
+        10.5,
+        2.75
+      ]
+    },
+    {
+      "name": "Glut",
+      "type": "cube",
+      "uuid": "454851c7-5d59-4f9b-b107-140cf910fc7b",
+      "to": [
+        11,
+        11.5,
+        2.8
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            97,
+            1,
+            111,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            97,
+            1,
+            111,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            97,
+            1,
+            111,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            97,
+            1,
+            111,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            97,
+            1,
+            111,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            97,
+            1,
+            111,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        5,
+        10.7,
+        2.6
+      ]
+    },
+    {
+      "name": "Flamme",
+      "type": "cube",
+      "uuid": "cd0469aa-7254-4d9e-8de8-244bcfe6d92f",
+      "to": [
+        6.5,
+        12.3,
+        2.75
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        5.5,
+        11,
+        2.55
+      ]
+    },
+    {
+      "name": "Flamme",
+      "type": "cube",
+      "uuid": "5e1ef0d8-50f1-41f7-8109-07155d4d48a0",
+      "to": [
+        8.5,
+        13,
+        2.75
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        7.5,
+        11,
+        2.55
+      ]
+    },
+    {
+      "name": "Flamme",
+      "type": "cube",
+      "uuid": "ef7b62c3-f18c-4db6-9b13-73410504e41b",
+      "to": [
+        10.5,
+        12.5,
+        2.75
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            113,
+            1,
+            127,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        9.5,
+        11,
+        2.55
+      ]
+    },
+    {
+      "name": "Ofenrost",
+      "type": "cube",
+      "uuid": "8ec19566-b78f-4b6c-ac48-3837cda99eed",
+      "to": [
+        5.85,
+        14,
+        2.6
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        5.5,
+        10.5,
+        2.4
+      ]
+    },
+    {
+      "name": "Ofenrost",
+      "type": "cube",
+      "uuid": "3dda2b67-e45e-4c0d-8296-6ee7bc6bf650",
+      "to": [
+        8.35,
+        14,
+        2.6
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        8,
+        10.5,
+        2.4
+      ]
+    },
+    {
+      "name": "Ofenrost",
+      "type": "cube",
+      "uuid": "c44ece20-b20a-40f1-a84a-5f772886b8d2",
+      "to": [
+        10.85,
+        14,
+        2.6
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        10.5,
+        10.5,
+        2.4
+      ]
+    },
+    {
+      "name": "Abgasstutzen",
+      "type": "cube",
+      "uuid": "56cca333-08e1-4733-928b-405743855682",
+      "to": [
+        9,
+        21,
+        11
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        7,
+        19,
+        9
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "7e5a45cc-9c52-4739-b9aa-4a261637339c",
+      "to": [
+        18,
+        7,
+        13
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        17,
+        6,
+        12
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "cbe16378-5d09-4b50-af43-eb3039c50f6a",
+      "to": [
+        18,
+        8,
+        12
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        17,
+        7,
+        11
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "cabcf031-393d-4e76-a5c5-afcf4047fb9e",
+      "to": [
+        18,
+        9,
+        11
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        17,
+        8,
+        10
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "720c604b-5265-4d3b-bae5-434e93210290",
+      "to": [
+        18,
+        10,
+        10
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        17,
+        9,
+        9
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "0f90175a-7ffb-40b1-861e-b5cd1823d6bb",
+      "to": [
+        18,
+        11,
+        9
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        17,
+        10,
+        8
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "cb5e1613-231e-4356-aab6-876ba6f5aee9",
+      "to": [
+        18,
+        12,
+        8
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        17,
+        11,
+        7
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "19d2bec2-039b-4eeb-abe4-afcca4b3eb66",
+      "to": [
+        18,
+        13,
+        7
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        17,
+        12,
+        6
+      ]
+    },
+    {
+      "name": "Haltebügel",
+      "type": "cube",
+      "uuid": "a3ca3252-e81f-4e75-bbae-4ea6a843b730",
+      "to": [
+        18.2,
+        8.5,
+        11.3
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        16.8,
+        8,
+        10
+      ]
+    },
+    {
+      "name": "Haltebügel",
+      "type": "cube",
+      "uuid": "77068afc-56a2-4147-99ca-bea5917d1b3d",
+      "to": [
+        18.2,
+        11.5,
+        8.3
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        16.8,
+        11,
+        7
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "0d6da0ed-b51a-40f7-b287-ff3529667ae2",
+      "to": [
+        -1,
+        7,
+        13
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        -2,
+        6,
+        12
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "ab7222d1-d93d-4bbc-911b-bfe27a74c513",
+      "to": [
+        -1,
+        8,
+        12
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        -2,
+        7,
+        11
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "1c5f79ab-4d57-4351-98c7-1e98625bec17",
+      "to": [
+        -1,
+        9,
+        11
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        -2,
+        8,
+        10
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "3af73f3d-a19e-4f71-b9f1-dee8970a8c24",
+      "to": [
+        -1,
+        10,
+        10
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        -2,
+        9,
+        9
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "640dadf0-f1e1-457a-a3f4-93c49246c56b",
+      "to": [
+        -1,
+        11,
+        9
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        -2,
+        10,
+        8
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "b4afadcf-1b94-4e03-bce7-6634c1204e94",
+      "to": [
+        -1,
+        12,
+        8
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        -2,
+        11,
+        7
+      ]
+    },
+    {
+      "name": "Holzstiel",
+      "type": "cube",
+      "uuid": "13d6501d-0138-4a53-9fe0-f39e16e48071",
+      "to": [
+        -1,
+        13,
+        7
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            1,
+            17,
+            15,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        -2,
+        12,
+        6
+      ]
+    },
+    {
+      "name": "Haltebügel",
+      "type": "cube",
+      "uuid": "7de05ecb-1725-4ea6-9a7b-c43567e21787",
+      "to": [
+        -0.8,
+        8.5,
+        11.3
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        -2.2,
+        8,
+        10
+      ]
+    },
+    {
+      "name": "Haltebügel",
+      "type": "cube",
+      "uuid": "8bfab5a5-4adb-45b0-a716-89c19189b5a7",
+      "to": [
+        -0.8,
+        11.5,
+        8.3
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            1,
+            47,
+            15
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        -2.2,
+        11,
+        7
+      ]
+    },
+    {
+      "name": "Kopf Mitte",
+      "type": "cube",
+      "uuid": "8aed1553-ec27-4a94-8744-15ab1ff067af",
+      "to": [
+        18.2,
+        14.5,
+        9
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        16.8,
+        13,
+        3
+      ]
+    },
+    {
+      "name": "Spitze vorn",
+      "type": "cube",
+      "uuid": "926d7ba5-9ee5-4946-940c-7b3a3bdd2f7b",
+      "to": [
+        18.2,
+        14,
+        3.5
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        16.8,
+        11.5,
+        2
+      ]
+    },
+    {
+      "name": "Spitze hinten",
+      "type": "cube",
+      "uuid": "5bb1653e-a51d-410e-9404-0f4d0a14a409",
+      "to": [
+        18.2,
+        14,
+        10
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        16.8,
+        11.5,
+        8.5
+      ]
+    },
+    {
+      "name": "Blatt Mitte",
+      "type": "cube",
+      "uuid": "c25fd6b8-2f67-4113-a6ab-6172c4aba5a3",
+      "to": [
+        -0.8,
+        16,
+        6.5
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        -2.2,
+        13,
+        3.5
+      ]
+    },
+    {
+      "name": "Blatt Spitze",
+      "type": "cube",
+      "uuid": "a495d2ef-dbae-482c-a081-ee79f4f5b9f5",
+      "to": [
+        -0.8,
+        17,
+        6
+      ],
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "box_uv": false,
+      "faces": {
+        "north": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            33,
+            17,
+            47,
+            31
+          ],
+          "texture": 0
+        }
+      },
+      "from": [
+        -2.2,
+        16,
+        4
+      ]
+    }
+  ],
+  "outliner": [
+    {
+      "name": "Lore",
+      "uuid": "5ad843b8-546f-4ff8-b5a6-2a7b0004cfe1",
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "children": [
+        "5a39a0a3-757d-4f6f-90cf-9947548936c8",
+        "6821df82-5281-4b81-81e9-6386dda80e45",
+        "46db90a0-5ada-49e8-9719-6182d69cd72f",
+        "30bf2830-e7a2-424f-a13d-3f759f0bad13",
+        "5489e2b0-3da7-4a0e-8372-59b371de1fc2",
+        "2260927f-cffe-4b8a-bf61-ec6efff458fb",
+        "2c01ab59-7d82-45c9-87e6-644070b498e0",
+        "f0816651-1ad9-4c2f-94a9-5b1213a37eba",
+        "2009ad72-dc04-4d9a-8fd7-1f4af0d80ae7",
+        "4e19f651-8f85-4157-a61a-5345fda550b0",
+        "44d39f77-72e6-477f-afe1-c3343b1b25b3",
+        "f00ebe82-78f4-4f16-a20d-48ea236e1fbc",
+        "ea0ec671-b7c6-4316-b76c-8a5ae89db65e",
+        "bf22919d-9bb4-441d-84b5-7bae0957cd52",
+        "7a82052f-5211-46fe-bc48-6fe616c643fb",
+        "f15b1abd-bc99-4f4f-a132-d9ae464475ab",
+        "28135855-3c86-4fa1-abf9-a4a0f4b2aa0c",
+        "a987dd9c-a565-42e0-bcbf-1829913acc36",
+        "492566c0-0d8d-41ca-8e86-e0fbbbfbb2d0"
+      ],
+      "export": true,
+      "isOpen": true
+    },
+    {
+      "name": "Ofen",
+      "uuid": "a24f068e-e5c8-4dfa-a8a1-298bf2158649",
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "children": [
+        "fbc3d424-078b-45ae-bf14-e25b4e44354a",
+        "254bda59-0ee7-44f5-910e-85172054e908",
+        "046ba0a0-59a9-4731-9e60-a1c5ed0002d3",
+        "8f6c06de-0d26-4633-b12b-19561a9f547c",
+        "454851c7-5d59-4f9b-b107-140cf910fc7b",
+        "cd0469aa-7254-4d9e-8de8-244bcfe6d92f",
+        "5e1ef0d8-50f1-41f7-8109-07155d4d48a0",
+        "ef7b62c3-f18c-4db6-9b13-73410504e41b",
+        "8ec19566-b78f-4b6c-ac48-3837cda99eed",
+        "3dda2b67-e45e-4c0d-8296-6ee7bc6bf650",
+        "c44ece20-b20a-40f1-a84a-5f772886b8d2",
+        "56cca333-08e1-4733-928b-405743855682"
+      ],
+      "export": true,
+      "isOpen": true
+    },
+    {
+      "name": "Spitzhacke rechts",
+      "uuid": "69b38253-2b5d-4e3c-957f-fa2db72d71db",
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "children": [
+        "7e5a45cc-9c52-4739-b9aa-4a261637339c",
+        "cbe16378-5d09-4b50-af43-eb3039c50f6a",
+        "cabcf031-393d-4e76-a5c5-afcf4047fb9e",
+        "720c604b-5265-4d3b-bae5-434e93210290",
+        "0f90175a-7ffb-40b1-861e-b5cd1823d6bb",
+        "cb5e1613-231e-4356-aab6-876ba6f5aee9",
+        "19d2bec2-039b-4eeb-abe4-afcca4b3eb66",
+        "a3ca3252-e81f-4e75-bbae-4ea6a843b730",
+        "77068afc-56a2-4147-99ca-bea5917d1b3d",
+        "8aed1553-ec27-4a94-8744-15ab1ff067af",
+        "926d7ba5-9ee5-4946-940c-7b3a3bdd2f7b",
+        "5bb1653e-a51d-410e-9404-0f4d0a14a409"
+      ],
+      "export": true,
+      "isOpen": true
+    },
+    {
+      "name": "Schaufel links",
+      "uuid": "c5c3ffe8-01f9-43ed-bc0e-ddfe38057a01",
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "children": [
+        "0d6da0ed-b51a-40f7-b287-ff3529667ae2",
+        "ab7222d1-d93d-4bbc-911b-bfe27a74c513",
+        "1c5f79ab-4d57-4351-98c7-1e98625bec17",
+        "3af73f3d-a19e-4f71-b9f1-dee8970a8c24",
+        "640dadf0-f1e1-457a-a3f4-93c49246c56b",
+        "b4afadcf-1b94-4e03-bce7-6634c1204e94",
+        "13d6501d-0138-4a53-9fe0-f39e16e48071",
+        "7de05ecb-1725-4ea6-9a7b-c43567e21787",
+        "8bfab5a5-4adb-45b0-a716-89c19189b5a7",
+        "c25fd6b8-2f67-4113-a6ab-6172c4aba5a3",
+        "a495d2ef-dbae-482c-a081-ee79f4f5b9f5"
+      ],
+      "export": true,
+      "isOpen": true
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        25,
+        225,
+        0
+      ],
+      "translation": [
+        0,
+        -1,
+        0
+      ],
+      "scale": [
+        0.7,
+        0.7,
+        0.7
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        2,
+        0
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    }
+  },
+  "textures": [
+    {
+      "name": "miningbot.png",
+      "id": "0",
+      "relative_path": "miningbot.png",
+      "width": 128,
+      "height": 128,
+      "uv_width": 128,
+      "uv_height": 128,
+      "uuid": "13860a64-c59b-497b-a841-afcc5bd8ef76",
+      "particle": true,
+      "internal": true,
+      "saved": true,
+      "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAABn0lEQVR4nO3bsSrHURyH4R/ZJAbJJIuVAYPB8FcyKbfAZcjmbpRBuQA34AYsNqNrcA3fUu/yPPPnnOXtjGft7GK1TByfno/2V6vL0f756XG0v727Ge3fXl5H+6+HzdF+WZ2M5uuz2/lvAsQEiAkQEyAmQEyAmAAxAWICxASICRATICZATIDYxvX+7+jAxcH3aL93dD/ab+3sjvYfH5+j/fbe4Wh//j6aL8v7z2juBcQEiAkQEyAmQEyAmAAxAWICxASICRATICZATICYALG16f8A/pcXEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyAmAAxAWICxASICRATICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyAmAAxAWICxASICRATICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyAmAAxAWICxASICRATICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyAmAAxAWICxASICRATICZATICYADEBYgIsrT+yHBIyzhQ2KwAAAABJRU5ErkJggg=="
+    }
+  ]
+}

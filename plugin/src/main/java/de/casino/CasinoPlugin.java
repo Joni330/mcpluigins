@@ -26,6 +26,8 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     private StorageTerminals storageTerminals;
     private StorageTeams storageTeams;
     private MainMenu mainMenu;
+    private Elevators elevators;
+    private MiningBots miningBots;
     private HomeData homeData;
     private Backpacks backpacks;
 
@@ -39,6 +41,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
             accounts = new Accounts(getDataFolder().toPath());
             storageTeams = new StorageTeams(getDataFolder().toPath());
             homeData = new HomeData(getDataFolder().toPath());
+            miningBots = new MiningBots(this, storageTeams);
         }
         catch (Exception error) {
             getLogger().log(java.util.logging.Level.SEVERE, "Kontodaten konnten nicht geladen werden.", error);
@@ -55,6 +58,10 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         chips = new Chips(this);
         getServer().getPluginManager().registerEvents(chips, this);
         registerMachineRecipe();
+        elevators = new Elevators(this);
+        elevators.enable();
+        miningBots.enable();
+        new MiningBotDesign(this, miningBots).enable();
         StorageTeamCommand teamCommand = new StorageTeamCommand(storageTeams);
         Objects.requireNonNull(getCommand("lagerteam")).setExecutor(teamCommand);
         Objects.requireNonNull(getCommand("lagerteam")).setTabCompleter(teamCommand);
@@ -89,6 +96,8 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     }
 
     @Override public void onDisable() {
+        if (miningBots != null) miningBots.disable();
+        if (elevators != null) elevators.disable();
         if (backpacks != null) backpacks.disable();
         for (Player p : Bukkit.getOnlinePlayers()) if (p.getOpenInventory().getTopInventory().getHolder() instanceof CasinoBankMenu) p.closeInventory();
         if (mainMenu != null) mainMenu.disable();

@@ -137,9 +137,20 @@ final class MainMenu implements Listener {
                 icon(page, 24, Material.DROPPER, "Lager-Sender", "Mit verbundenem Handy schleichend rechtsklicken.", "Leere Hand + Schleichen: Filtermenü", "Überlaufkiste vor die Ausgabeseite stellen.");
             }
             case "Hilfe" -> {
+                icon(page, 31, Material.DAYLIGHT_DETECTOR, "Aufzug", "Klicken: Rezept und Bedienung ansehen");
                 icon(page, 20, Material.PAPER, "Konto & Geld", "/casino konto", "/pay <Spieler> <Betrag>");
                 icon(page, 22, Material.PLAYER_HEAD, "Team-Befehle", "/lagerteam erstellen <Name>", "/lagerteam einladen <Spieler>", "/lagerteam annehmen <Team>", "/lagerteam info");
                 icon(page, 24, Material.BOOK, "Navigation", "/menu öffnet das Hauptmenü.", "Pfeil: Zurück · Barriere: Schließen");
+            }
+            case "Aufzug" -> {
+                for (int slot : new int[]{10, 11, 12, 19, 21, 28, 29, 30})
+                    icon(page, slot, Material.IRON_INGOT, "Eisenbarren");
+                icon(page, 20, Material.ENDER_PEARL, "Enderperle");
+                icon(page, 23, Material.DAYLIGHT_DETECTOR, "Aufzug", "Rezept: 8 Eisenbarren + 1 Enderperle", "Normale Tageslichtsensoren sind keine Aufzüge.");
+                icon(page, 25, Material.BOOK, "So funktioniert es", "Aufzüge direkt übereinander platzieren.",
+                        "Auf dem Sensor springen: nächste Etage hoch.", "Schleichen: nächste Etage runter.",
+                        "Über dem Ziel zwei Blöcke freilassen.", "Decken zwischen den Etagen stören nicht.");
+                icon(page, 45, Material.ARROW, "Zurück zur Hilfe");
             }
         }
         player.openInventory(page.inventory);
@@ -156,8 +167,9 @@ final class MainMenu implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (!p.isOnline() || p.getOpenInventory().getTopInventory().getHolder() != page) return;
             if (slot == 53) { p.closeInventory(); return; }
-            if (slot == 45 && !page.section.equals("Hauptmenü")) { open(p, page.section.equals("Kontoverlauf") ? "Konto" : "Hauptmenü", 0); return; }
+            if (slot == 45 && !page.section.equals("Hauptmenü")) { open(p, page.section.equals("Aufzug") ? "Hilfe" : page.section.equals("Kontoverlauf") ? "Konto" : "Hauptmenü", 0); return; }
             switch (page.section) {
+                case "Hilfe" -> { if (slot == 31) open(p, "Aufzug", 0); }
                 case "Hauptmenü" -> {
                     if (slot == 20) open(p, "Konto", 0);
                     else if (slot == 22) open(p, "Team", 0);

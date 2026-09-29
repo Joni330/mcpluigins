@@ -4,6 +4,10 @@ main: de.casino.CasinoPlugin
 api-version: '26.3'
 description: Casino-Konten, Wechselautomaten und Kistenmenü
 commands:
+  miningbot:
+    description: MiningBot-Item erhalten oder einen Entwurf verwalten
+    usage: /miningbot <give|design|entfernen>
+    permission: casino.admin
   back:
     description: Zu deinem letzten Todespunkt teleportieren
     usage: /back
