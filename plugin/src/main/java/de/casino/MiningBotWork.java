@@ -6,11 +6,12 @@ import java.util.List;
 /** Persisted navigation and energy, independent of the visual entities. */
 record MiningBotWork(Phase phase, int distance, int energy, boolean resume, UUID operator, Pending pending) {
     enum Phase { IDLE, MINING, RETURNING, UNLOADING }
-    record Pending(int x, int y, int z, String blockData, List<Pending> surrounding) {
+    record Pending(int x, int y, int z, String blockData, List<Pending> surrounding, String replacement) {
         Pending { surrounding = List.copyOf(surrounding); }
+        Pending(int x, int y, int z, String blockData, List<Pending> surrounding) { this(x,y,z,blockData,surrounding,"minecraft:air"); }
         Pending(int x, int y, int z, String blockData) { this(x, y, z, blockData, List.of()); }
         List<Pending> blocks() {
-            return java.util.stream.Stream.concat(java.util.stream.Stream.of(new Pending(x, y, z, blockData)), surrounding.stream()).toList();
+            return java.util.stream.Stream.concat(java.util.stream.Stream.of(new Pending(x, y, z, blockData, List.of(), replacement)), surrounding.stream()).toList();
         }
     }
     MiningBotWork {

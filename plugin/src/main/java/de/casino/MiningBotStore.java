@@ -7,7 +7,16 @@ import java.util.*;
 
 /** One atomic file per bot. Never replace unreadable state with an empty inventory. */
 final class MiningBotStore {
-    record Saved(UUID id, UUID owner, UUID world, int x, int y, int z, float yaw, boolean unloading, byte[] items, MiningBotWork work, MiningBotLighting lighting) {
+    record Saved(UUID id, UUID owner, UUID world, int x, int y, int z, float yaw, boolean unloading, byte[] items, MiningBotWork work, MiningBotLighting lighting, MiningBotVeins veins, boolean floorBuilder, boolean fluidShield) {
+        Saved(UUID id, UUID owner, UUID world, int x, int y, int z, float yaw, boolean unloading, byte[] items, MiningBotWork work, MiningBotLighting lighting, MiningBotVeins veins, boolean floorBuilder) {
+            this(id, owner, world, x, y, z, yaw, unloading, items, work, lighting, veins, floorBuilder, false);
+        }
+        Saved(UUID id, UUID owner, UUID world, int x, int y, int z, float yaw, boolean unloading, byte[] items, MiningBotWork work, MiningBotLighting lighting, MiningBotVeins veins) {
+            this(id, owner, world, x, y, z, yaw, unloading, items, work, lighting, veins, false);
+        }
+        Saved(UUID id, UUID owner, UUID world, int x, int y, int z, float yaw, boolean unloading, byte[] items, MiningBotWork work, MiningBotLighting lighting) {
+            this(id, owner, world, x, y, z, yaw, unloading, items, work, lighting, MiningBotVeins.off());
+        }
         Saved(UUID id, UUID owner, UUID world, int x, int y, int z, float yaw, boolean unloading, byte[] items, MiningBotWork work) {
             this(id, owner, world, x, y, z, yaw, unloading, items, work, MiningBotLighting.off());
         }
@@ -22,7 +31,7 @@ final class MiningBotStore {
         try (var files = Files.list(folder)) {
             for (Path file : files.filter(p -> p.getFileName().toString().endsWith(".yml")).toList()) {
                 var yaml = new YamlConfiguration(); yaml.load(file.toFile());
-                if (yaml.getInt("version") < 1 || yaml.getInt("version") > 4) throw new IOException("Unbekanntes Bot-Format: " + file);
+                if (yaml.getInt("version") < 1 || yaml.getInt("version") > 7) throw new IOException("Unbekanntes Bot-Format: " + file);
                 MiningBotWork work = new MiningBotWork(MiningBotWork.Phase.valueOf(yaml.getString("work.phase", "IDLE")),
                         yaml.getInt("work.distance"), yaml.getInt("work.energy"), yaml.getBoolean("work.resume"),
                         yaml.contains("work.operator") ? UUID.fromString(yaml.getString("work.operator")) : null,
@@ -30,19 +39,25 @@ final class MiningBotStore {
                                 yaml.getInt("work.pending.z"), Objects.requireNonNull(yaml.getString("work.pending.block")),
                                 yaml.getMapList("work.pending.surrounding").stream().map(row -> new MiningBotWork.Pending(
                                         ((Number) row.get("x")).intValue(), ((Number) row.get("y")).intValue(), ((Number) row.get("z")).intValue(),
-                                        Objects.requireNonNull((String) row.get("block")))).toList()) : null);
+                                        Objects.requireNonNull((String) row.get("block")))).toList(), yaml.getString("work.pending.replacement", "minecraft:air")) : null);
                 UUID id = UUID.fromString(file.getFileName().toString().replace(".yml", ""));
                 result.add(new Saved(id, UUID.fromString(Objects.requireNonNull(yaml.getString("owner"))),
                         UUID.fromString(Objects.requireNonNull(yaml.getString("world"))), yaml.getInt("x"), yaml.getInt("y"), yaml.getInt("z"),
                         (float) yaml.getDouble("yaw"), yaml.getBoolean("unloading"), Base64.getDecoder().decode(Objects.requireNonNull(yaml.getString("items"))), work,
-                        new MiningBotLighting(yaml.getBoolean("lighting.enabled"), yaml.getInt("lighting.last-distance"))));
+                        new MiningBotLighting(yaml.getBoolean("lighting.enabled"), yaml.getInt("lighting.last-distance")),
+                        new MiningBotVeins(yaml.getBoolean("veins.enabled"), yaml.getInt("veins.depth"), yaml.getMapList("veins.remaining").stream()
+                                .map(row -> new MiningBotVeins.Pos(((Number) row.get("x")).intValue(), ((Number) row.get("y")).intValue(), ((Number) row.get("z")).intValue())).toList()), yaml.getBoolean("floor-builder"), yaml.getBoolean("fluid-shield")));
             }
         }
         return result;
     }
     void save(Saved state) throws IOException {
         var yaml = new YamlConfiguration();
-        yaml.set("version", 4); yaml.set("owner", state.owner().toString()); yaml.set("world", state.world().toString());
+        yaml.set("version", 7); yaml.set("owner", state.owner().toString()); yaml.set("world", state.world().toString());
+        yaml.set("fluid-shield", state.fluidShield());
+        yaml.set("floor-builder", state.floorBuilder());
+        yaml.set("veins.enabled", state.veins().enabled()); yaml.set("veins.depth", state.veins().checkedDepth());
+        yaml.set("veins.remaining", state.veins().remaining().stream().map(p -> Map.of("x",p.x(),"y",p.y(),"z",p.z())).toList());
         yaml.set("lighting.enabled", state.lighting().enabled()); yaml.set("lighting.last-distance", state.lighting().lastDistance());
         yaml.set("x", state.x()); yaml.set("y", state.y()); yaml.set("z", state.z()); yaml.set("yaw", state.yaw());
         yaml.set("unloading", state.unloading());
@@ -52,6 +67,7 @@ final class MiningBotStore {
         if (work.pending() != null) {
             yaml.set("work.pending.x", work.pending().x()); yaml.set("work.pending.y", work.pending().y()); yaml.set("work.pending.z", work.pending().z());
             yaml.set("work.pending.block", work.pending().blockData());
+            yaml.set("work.pending.replacement", work.pending().replacement());
             yaml.set("work.pending.surrounding", work.pending().surrounding().stream().map(block ->
                     Map.of("x", block.x(), "y", block.y(), "z", block.z(), "block", block.blockData())).toList());
         }

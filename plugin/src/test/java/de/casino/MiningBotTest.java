@@ -7,6 +7,17 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MiningBotTest {
+    @Test void floorBuilderPersistsWithoutChangingInventoryAndDefaultsOff(@TempDir Path dir) throws Exception {
+        var store = new MiningBotStore(dir);
+        var base = state(UUID.randomUUID(), new byte[]{1, 2});
+        assertFalse(base.floorBuilder());
+        store.save(new MiningBotStore.Saved(base.id(), base.owner(), base.world(), base.x(), base.y(), base.z(), base.yaw(),
+                base.unloading(), base.items(), MiningBotWork.idle(), MiningBotLighting.off(), MiningBotVeins.off(), true));
+        var loaded = new MiningBotStore(dir).load().getFirst();
+        assertTrue(loaded.floorBuilder()); assertArrayEquals(base.items(), loaded.items());
+        store.save(base);
+        assertFalse(new MiningBotStore(dir).load().getFirst().floorBuilder());
+    }
     @Test void matchingStacksAreFilledBeforeEmptySlotsAndNoItemsAreLost() {
         assertArrayEquals(new int[]{60, 4, 0}, BotInventory.plan(64, new int[]{64, 4, 0}, new boolean[]{false, true, true}));
         assertArrayEquals(new int[]{2, 3}, BotInventory.plan(64, new int[]{2, 3}, new boolean[]{true, false}));

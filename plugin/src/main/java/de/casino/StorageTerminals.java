@@ -155,7 +155,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             inventory.setItem(49, ExchangeMenu.icon(Material.BOOK, "Rezeptbuch · Rezept suchen und automatisch befüllen"));
             inventory.setItem(53, ExchangeMenu.icon(Material.BARRIER, "Vorlage leeren"));
         }
-        craft.store.location.getChunk().addPluginChunkTicket(plugin);
+        PluginChunks.acquire(plugin, this, new PluginChunks.Key(craft.store.location.getWorld().getUID(), craft.store.location.getBlockX() >> 4, craft.store.location.getBlockZ() >> 4));
         player.openInventory(inventory);
         if (craft.book && player.getOpenInventory().getTopInventory() == inventory)
             player.getOpenInventory().setTitle("Lager · Rezeptbuch");
@@ -513,7 +513,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         }
     }
     private void open(Player player, Store store, int page, boolean remote) {
-        store.location.getChunk().addPluginChunkTicket(plugin);
+        PluginChunks.acquire(plugin, this, new PluginChunks.Key(store.location.getWorld().getUID(), store.location.getBlockX() >> 4, store.location.getBlockZ() >> 4));
         Inventory target = store.pages.get(page).inventory;
         player.openInventory(target);
         if (player.getOpenInventory().getTopInventory() == target && remote) remoteUsers.put(player.getUniqueId(), store.id);
@@ -529,7 +529,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
                     && (other.location.getBlockX() >> 4) == (store.location.getBlockX() >> 4)
                     && (other.location.getBlockZ() >> 4) == (store.location.getBlockZ() >> 4)
                     && !other.viewers().isEmpty());
-            if (!chunkInUse) store.location.getWorld().removePluginChunkTicket(store.location.getBlockX() >> 4, store.location.getBlockZ() >> 4, plugin);
+            if (!chunkInUse) PluginChunks.release(plugin, this, new PluginChunks.Key(store.location.getWorld().getUID(), store.location.getBlockX() >> 4, store.location.getBlockZ() >> 4));
         });
     }
     private void usePhone(Player player, Block clicked) {
@@ -833,7 +833,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         }
         Bukkit.removeRecipe(recipe);
         Bukkit.removeRecipe(phoneRecipe);
-        Bukkit.getWorlds().forEach(world -> world.removePluginChunkTickets(plugin));
+        PluginChunks.update(plugin, this, Set.of());
     }
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 1 && args[0].equalsIgnoreCase("sender")) {

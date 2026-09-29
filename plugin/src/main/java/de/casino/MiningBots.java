@@ -39,9 +39,12 @@ final class MiningBots implements Listener {
         boolean failed, unloading;
         MiningBotWork work;
         MiningBotLighting lighting;
+        MiningBotVeins veins;
+        boolean floorBuilder;
+        boolean fluidShield;
         int workTicks;
         String status = "Basis bereit";
-        Bot(MiningBotStore.Saved base, ItemStack[] items) { this.base = base; this.items = items; unloading = base.unloading(); work = base.work(); lighting = base.lighting(); }
+        Bot(MiningBotStore.Saved base, ItemStack[] items) { this.base = base; this.items = items; unloading = base.unloading(); work = base.work(); lighting = base.lighting(); veins = base.veins(); floorBuilder = base.floorBuilder(); fluidShield = base.fluidShield(); }
     }
     private static final class Page implements InventoryHolder {
         final UUID player;
@@ -111,7 +114,7 @@ final class MiningBots implements Listener {
     private boolean save(Bot bot, ItemStack[] items) {
         try {
             var b = bot.base;
-            store.save(new MiningBotStore.Saved(b.id(), b.owner(), b.world(), b.x(), b.y(), b.z(), b.yaw(), bot.unloading, ItemStack.serializeItemsAsBytes(items), bot.work, bot.lighting));
+            store.save(new MiningBotStore.Saved(b.id(), b.owner(), b.world(), b.x(), b.y(), b.z(), b.yaw(), bot.unloading, ItemStack.serializeItemsAsBytes(items), bot.work, bot.lighting, bot.veins, bot.floorBuilder, bot.fluidShield));
             bot.items = items; return true;
         } catch (Exception error) {
             bot.failed = true; bot.status = "Speicherfehler · gesperrt";
@@ -282,6 +285,14 @@ final class MiningBots implements Listener {
             icon(page, 4, Material.PAPER, "Status: " + page.bot.status, "Entfernung: " + page.bot.work.distance() + " Blöcke",
                     "Restenergie: " + page.bot.work.energy() + " Abbauschritte");
             icon(page, 26, Material.BARRIER, "Schließen");
+            icon(page, 22, Material.BUCKET, "Flüssigkeitsschutz: " + (page.bot.fluidShield ? "AN" : "AUS"),
+                    "Klicken: ein-/ausschalten", "Dichtet offene Wände, Decke und Boden ab",
+                    "Entfernt Wasser und Lava im Arbeitsbereich · kostenlos");
+            icon(page, 24, Material.COBBLESTONE, "Blockerneuerer: " + (page.bot.floorBuilder ? "AN" : "AUS"),
+                    "Klicken: ein-/ausschalten", "Füllt Luft in den drei Bodenblöcken unter dem Bot",
+                    "Kostenlos · danach werden Fackeln geprüft");
+            icon(page, 20, Material.DIAMOND_ORE, "Erzadern abbauen: " + (page.bot.veins.enabled() ? "AN" : "AUS"),
+                    "Klicken: ein-/ausschalten", "Boden und Decke prüfen · bis 64 Erze pro Fund", "Maximal 8 Blöcke vom Tunnel · Ersatzboden kostenlos");
         } else {
             int from = page.mode.equals("Brennstoff") ? FUEL : CARGO;
             for (int i = 0; i < 27; i++) page.inventory.setItem(i, cloneItem(page.bot.items[from + i]));
@@ -326,6 +337,9 @@ final class MiningBots implements Listener {
                 page.bot.lighting = page.bot.lighting.toggle();
                 save(page.bot, page.bot.items); refresh(page.bot);
             }
+            else if (raw == 20) { page.bot.veins = page.bot.veins.toggle(); save(page.bot, page.bot.items); refresh(page.bot); }
+            else if (raw == 24) { page.bot.floorBuilder = !page.bot.floorBuilder; save(page.bot, page.bot.items); refresh(page.bot); }
+            else if (raw == 22) { page.bot.fluidShield = !page.bot.fluidShield; save(page.bot, page.bot.items); refresh(page.bot); }
             else if (raw == 10) later(player, page, () -> open(player, page.bot, "Brennstoff"));
             else if (raw == 16) later(player, page, () -> open(player, page.bot, "Lager"));
             else if (raw == 21 || raw == 23) transferSlot(player, page, raw == 21 ? 0 : 1, right);
@@ -383,6 +397,7 @@ final class MiningBots implements Listener {
     }
     private void tick() {
         if (stopping) return;
+        updateChunks();
         for (Player player : Bukkit.getOnlinePlayers()) if (player.getOpenInventory().getTopInventory().getHolder() instanceof Page page && !usable(player, page.bot)) player.closeInventory();
         for (Bot bot : List.copyOf(bots.values())) {
             if (bot.failed || !loaded(bot)) continue;
@@ -443,7 +458,7 @@ final class MiningBots implements Listener {
         // Rewards and consumption were committed before changing the world. Replay without extra drops.
         for (var part : pending.blocks()) {
             Block block = world(bot).getBlockAt(part.x(), part.y(), part.z());
-            if (block.getBlockData().getAsString().equals(part.blockData())) block.setType(Material.AIR, true);
+            if (block.getBlockData().getAsString().equals(part.blockData())) block.setBlockData(Bukkit.createBlockData(part.replacement()), true);
         }
         bot.work = bot.work.pending(null);
         return save(bot, bot.items);
@@ -475,9 +490,12 @@ final class MiningBots implements Listener {
     }
     private void mineStep(Bot bot) {
         Player operator = bot.work.operator() == null ? null : Bukkit.getPlayer(bot.work.operator());
-        if (operator == null || !operator.isOnline() || operator.getGameMode() == GameMode.SPECTATOR || !allowed(operator, bot) || operator.getWorld() != world(bot)) {
-            bot.status = "Pause · Starter muss online und in dieser Welt sein"; return;
+        if (bot.work.operator() == null || (operator == null ? !teams.shares(bot.base.owner(), bot.work.operator()) : !allowed(operator, bot))) {
+            bot.status = "Pause · Starter nicht mehr zugriffsberechtigt"; return;
         }
+        if (!sealFluids(bot, operator) || !renewFloor(bot, operator)) return;
+        placeTorch(bot, operator);
+        if (bot.failed) return;
         List<Block> ahead = face(bot, bot.work.distance() + 1);
         if (ahead == null) { bot.status = "Pause · nächster Chunk ungeladen oder Weltgrenze"; return; }
         // Re-check our current layer because gravel or sand can refill an already opened tunnel.
@@ -488,9 +506,24 @@ final class MiningBots implements Listener {
             if (current.stream().anyMatch(block -> !openForBot(block))) examine = current;
         }
         List<Block> solid = examine.stream().filter(block -> !openForBot(block)).toList();
+        boolean vein = false;
+        // Finish a persisted vein only after physically retracing the tunnel to its discovery layer.
+        if (bot.veins.enabled() && bot.work.distance() > 0 && bot.work.distance() >= bot.veins.checkedDepth()) {
+            if (bot.veins.remaining().isEmpty() && bot.veins.checkedDepth() < bot.work.distance()) {
+                scanVeins(bot);
+                if (!save(bot, bot.items)) return;
+            }
+            if (!bot.veins.remaining().isEmpty()) {
+                var pos = bot.veins.remaining().getFirst();
+                if (!world(bot).isChunkLoaded(pos.x() >> 4, pos.z() >> 4)) { bot.status = "Erzader pausiert · Chunk ungeladen"; return; }
+                Block ore = world(bot).getBlockAt(pos.x(), pos.y(), pos.z());
+                if (MiningBotVeins.ore(ore.getType().name()).isEmpty()) { bot.veins = bot.veins.done(); save(bot, bot.items); return; }
+                examine = List.of(ore); solid = examine; vein = true;
+            }
+        }
         if (!solid.isEmpty()) {
         // Index 4 is the geometric centre of the 3x3 face. If empty, clear the remaining rim.
-        Block focus = openForBot(examine.get(4)) ? solid.getFirst() : examine.get(4);
+        Block focus = vein ? solid.getFirst() : openForBot(examine.get(4)) ? solid.getFirst() : examine.get(4);
         examine = new ArrayList<>(examine);
         examine.remove(focus); examine.addFirst(focus);
         ItemStack focusTool = null;
@@ -511,14 +544,11 @@ final class MiningBots implements Listener {
             if (BotInventory.empty(tool)) { bot.status = "Pause · " + (toolSlot == 0 ? "Spitzhacke" : "Schaufel") + " fehlt"; return; }
             if (!correctTier(block.getType(), tool.getType())) { bot.status = "Pause · Werkzeug zu schwach für " + block.getType().name(); return; }
             String original = block.getBlockData().getAsString();
-            BlockBreakEvent protection = new BlockBreakEvent(block, operator);
-            protection.setDropItems(false); protection.setExpToDrop(0);
-            Bukkit.getPluginManager().callEvent(protection);
-            if (protection.isCancelled()) { bot.status = "Pause · Abbau durch Schutzplugin gesperrt"; return; }
+            if (!allowBreak(bot, block, operator)) { bot.status = "Pause · Abbau durch Schutzplugin gesperrt"; return; }
             if (!block.getBlockData().getAsString().equals(original)) { bot.status = "Block geändert · erneut prüfen"; return; }
             removed.add(new MiningBotWork.Pending(block.getX(), block.getY(), block.getZ(), original));
             if (block.equals(focus)) { focusTool = tool; focusSlot = toolSlot; }
-            for (ItemStack drop : block.getDrops(tool, operator)) {
+            for (ItemStack drop : operator == null ? block.getDrops(tool) : block.getDrops(tool, operator)) {
                 if (BotInventory.insert(next, CARGO, SIZE, drop) != drop.getAmount()) { returnForCargo(bot); return; }
             }
         }
@@ -549,26 +579,128 @@ final class MiningBots implements Listener {
                 }
             }
             var first = removed.getFirst();
-            bot.work = bot.work.energy(energy - 1).pending(new MiningBotWork.Pending(first.x(), first.y(), first.z(), first.blockData(), removed.subList(1, removed.size())));
+            boolean fillFloor = vein && tunnelFloor(bot, focus);
+            if (fillFloor) {
+                BlockState previous = focus.getState(); focus.setType(Material.COBBLESTONE, false);
+                boolean permitted = allowPlace(bot, focus, previous, focus.getRelative(BlockFace.DOWN), Material.COBBLESTONE, operator);
+                previous.update(true, false);
+                if (!permitted) { bot.status = "Pause · Ersatzboden durch Schutzplugin gesperrt"; return; }
+            }
+            if (vein) bot.veins = bot.veins.done();
+            bot.work = bot.work.energy(energy - 1).pending(new MiningBotWork.Pending(first.x(), first.y(), first.z(), first.blockData(), removed.subList(1, removed.size()), fillFloor ? "minecraft:cobblestone" : "minecraft:air"));
             if (!save(bot, next)) return;
             var sound = focus.getSoundGroup().getBreakSound();
             var particles = focus.getBlockData();
             float hardness = focus.getType().getHardness();
-            for (var part : removed) world(bot).getBlockAt(part.x(), part.y(), part.z()).setType(Material.AIR, true);
+            for (var part : bot.work.pending().blocks()) world(bot).getBlockAt(part.x(), part.y(), part.z()).setBlockData(Bukkit.createBlockData(part.replacement()), true);
             bot.work = bot.work.pending(null);
             if (!save(bot, bot.items)) return;
             world(bot).playSound(focus.getLocation(), sound, .45f, 1f);
             world(bot).spawnParticle(Particle.BLOCK, focus.getLocation().add(.5, .5, .5), 18, .25, .25, .25, particles);
             int efficiency = focusTool.getEnchantmentLevel(org.bukkit.enchantments.Enchantment.EFFICIENCY);
             bot.workTicks = Math.max(1, Math.min(20, (int) Math.ceil(hardness * 2 / (1 + efficiency))));
-            bot.status = "3×3-Schicht abgebaut · " + removed.size() + " Blöcke"; return;
+            bot.status = vein ? "Erzader abbauen · noch " + bot.veins.remaining().size() + " Erze" : "3×3-Schicht abgebaut · " + removed.size() + " Blöcke"; return;
         }
         // Falling entities have not become blocks yet: don't drive into a layer until they settle.
         Location front = base(bot).add(MiningBotWork.dx(bot.base.yaw()) * (bot.work.distance() + 1) + .5, 1.5,
                 MiningBotWork.dz(bot.base.yaw()) * (bot.work.distance() + 1) + .5);
         if (!world(bot).getNearbyEntities(front, 1.5, 2, 1.5, e -> e instanceof FallingBlock).isEmpty()) { bot.status = "Warte auf nachfallenden Sand / Kies"; return; }
         bot.work = bot.work.moved(); bot.status = "Fahre vor · " + bot.work.distance() + " Blöcke";
-        if (save(bot, bot.items)) { moveVisual(bot); placeTorch(bot, operator); }
+        if (save(bot, bot.items)) { moveVisual(bot); if (renewFloor(bot, operator)) placeTorch(bot, operator); }
+    }
+    private Block tunnelBlock(Bot bot, int depth, int side, int height) {
+        int dx = MiningBotWork.dx(bot.base.yaw()), dz = MiningBotWork.dz(bot.base.yaw());
+        int x = bot.base.x() + dx * depth + dz * side, z = bot.base.z() + dz * depth - dx * side;
+        int y = bot.base.y() + height;
+        if (y < world(bot).getMinHeight() || y >= world(bot).getMaxHeight() || !world(bot).isChunkLoaded(x >> 4, z >> 4)) return null;
+        Block block = world(bot).getBlockAt(x,y,z);
+        return world(bot).getWorldBorder().isInside(block.getLocation().add(.5,.5,.5)) ? block : null;
+    }
+    private boolean wet(Block block) {
+        return block.isLiquid() || block.getType() == Material.BUBBLE_COLUMN
+                || block.getBlockData() instanceof org.bukkit.block.data.Waterlogged data && data.isWaterlogged();
+    }
+    private boolean sealBlock(Bot bot, Block block, Player operator) {
+        if (block == null) { bot.status = "Flüssigkeitsschutz · Bereich nicht verfügbar"; return false; }
+        if (!wet(block) && !block.isPassable()) return true;
+        if (block.getState() instanceof TileState || protectedBlock(block) || isTorch(block.getType())) {
+            bot.status = "Flüssigkeitsschutz · Hindernis beim Abdichten"; return false;
+        }
+        BlockState previous = block.getState(); block.setType(Material.COBBLESTONE, false);
+        if (!allowPlace(bot, block, previous, block.getRelative(BlockFace.UP), Material.COBBLESTONE, operator) || block.getType() != Material.COBBLESTONE) {
+            previous.update(true, false); bot.status = "Flüssigkeitsschutz · Abdichten gesperrt"; return false;
+        }
+        return true;
+    }
+    private boolean sealFluids(Bot bot, Player operator) {
+        if (!bot.fluidShield) return true;
+        int first = Math.max(1, bot.work.distance()), last = bot.work.distance() + 1;
+        // Close the sides before touching any fluid inside the tunnel.
+        for (int depth=first; depth<=last; depth++) for (var offset : MiningBotFluids.shell())
+            if (!sealBlock(bot, tunnelBlock(bot,depth,offset.side(),offset.height()), operator)) return false;
+        // A temporary front cap moves forward as the normal miner opens the next face.
+        for (int side=-1; side<=1; side++) for (int height=0; height<=2; height++) {
+            Block cap = tunnelBlock(bot,last+1,side,height);
+            if (cap == null) { bot.status = "Flüssigkeitsschutz · Front nicht verfügbar"; return false; }
+            if (wet(cap) && !sealBlock(bot,cap,operator)) return false;
+        }
+        for (int depth=first; depth<=last; depth++) for (int side=-1; side<=1; side++) for (int height=0; height<=2; height++) {
+            Block block = tunnelBlock(bot,depth,side,height);
+            if (block == null) { bot.status = "Flüssigkeitsschutz · Innenraum nicht verfügbar"; return false; }
+            if (!wet(block)) continue;
+            if (block.getState() instanceof TileState || protectedBlock(block)) { bot.status = "Flüssigkeitsschutz · geschützter Block"; return false; }
+            var dry = block.getBlockData().clone();
+            if (dry instanceof org.bukkit.block.data.Waterlogged data) data.setWaterlogged(false);
+            else dry = Bukkit.createBlockData(Material.AIR);
+            if (!allowMachineChange(bot, block, dry)) { bot.status = "Flüssigkeitsschutz · Trockenlegen gesperrt"; return false; }
+            if (operator != null) {
+                BlockBreakEvent event = new BlockBreakEvent(block, operator); event.setDropItems(false); event.setExpToDrop(0);
+                Bukkit.getPluginManager().callEvent(event);
+                if (event.isCancelled()) { bot.status = "Flüssigkeitsschutz · Trockenlegen gesperrt"; return false; }
+            }
+            block.setBlockData(dry, true);
+        }
+        return true;
+    }
+    private boolean renewFloor(Bot bot, Player operator) {
+        if (!bot.floorBuilder || bot.work.distance() == 0) return true;
+        int dx = MiningBotWork.dx(bot.base.yaw()), dz = MiningBotWork.dz(bot.base.yaw());
+        int y = bot.base.y() - 1;
+        if (y < world(bot).getMinHeight()) { bot.status = "Blockerneuerer · untere Weltgrenze"; return false; }
+        for (int side = -1; side <= 1; side++) {
+            int x = bot.base.x() + dx * bot.work.distance() + dz * side;
+            int z = bot.base.z() + dz * bot.work.distance() - dx * side;
+            if (!world(bot).isChunkLoaded(x >> 4, z >> 4)) { bot.status = "Blockerneuerer · Chunk ungeladen"; return false; }
+            Block target = world(bot).getBlockAt(x, y, z);
+            if (!target.getType().isAir()) continue;
+            if (protectedBlock(target) || !world(bot).getWorldBorder().isInside(target.getLocation().add(.5,.5,.5))) {
+                bot.status = "Blockerneuerer · geschützter Boden"; return false;
+            }
+            BlockState previous = target.getState(); target.setType(Material.COBBLESTONE, false);
+            if (!allowPlace(bot, target, previous, target.getRelative(BlockFace.UP), Material.COBBLESTONE, operator) || target.getType() != Material.COBBLESTONE) {
+                previous.update(true, false); bot.status = "Blockerneuerer · Platzierung gesperrt"; return false;
+            }
+        }
+        return true;
+    }
+    private boolean tunnelFloor(Bot bot, Block block) {
+        int dx = MiningBotWork.dx(bot.base.yaw()), dz = MiningBotWork.dz(bot.base.yaw());
+        int x = block.getX() - bot.base.x(), z = block.getZ() - bot.base.z();
+        return block.getY() == bot.base.y() - 1 && x * dx + z * dz > 0 && Math.abs(x * dz - z * dx) <= 1;
+    }
+    private void scanVeins(Bot bot) {
+        int depth = bot.work.distance(), dx = MiningBotWork.dx(bot.base.yaw()), dz = MiningBotWork.dz(bot.base.yaw());
+        var centre = new MiningBotVeins.Pos(bot.base.x() + dx * depth, bot.base.y() + 1, bot.base.z() + dz * depth);
+        List<MiningBotVeins.Pos> seeds = new ArrayList<>();
+        for (int height : new int[]{-2, 2}) for (int side = -1; side <= 1; side++)
+            seeds.add(new MiningBotVeins.Pos(centre.x() + dz * side, centre.y() + height, centre.z() - dx * side));
+        var found = MiningBotVeins.find(seeds, centre, dx, dz, p -> {
+            World world = world(bot);
+            if (p.y() < world.getMinHeight() || p.y() >= world.getMaxHeight() || !world.isChunkLoaded(p.x() >> 4, p.z() >> 4)
+                    || !world.getWorldBorder().isInside(new Location(world, p.x() + .5, p.y() + .5, p.z() + .5))) return "";
+            return world.getBlockAt(p.x(), p.y(), p.z()).getType().name();
+        });
+        bot.veins = new MiningBotVeins(true, depth, found);
     }
     private void placeTorch(Bot bot, Player operator) {
         int distance = bot.work.distance();
@@ -593,13 +725,38 @@ final class MiningBots implements Listener {
             if (!target.getType().isAir() || !floor.getType().isOccluding() || protectedBlock(target)) continue;
             BlockState previous = target.getState();
             target.setType(Material.TORCH, false);
-            BlockPlaceEvent event = new BlockPlaceEvent(target, previous, floor, new ItemStack(Material.TORCH), operator, true, EquipmentSlot.HAND);
-            Bukkit.getPluginManager().callEvent(event);
-            if (event.isCancelled() || !event.canBuild() || target.getType() != Material.TORCH) { previous.update(true, false); continue; }
+            if (!allowPlace(bot, target, previous, floor, Material.TORCH, operator) || target.getType() != Material.TORCH) { previous.update(true, false); continue; }
             bot.lighting = bot.lighting.placed(distance);
             if (!save(bot, bot.items)) previous.update(true, false);
             return;
         }
+    }
+    private boolean allowBreak(Bot bot, Block block, Player operator) {
+        if (!allowMachineChange(bot, block, Material.AIR)) return false;
+        if (operator == null) return true;
+        BlockBreakEvent event = new BlockBreakEvent(block, operator);
+        event.setDropItems(false); event.setExpToDrop(0); Bukkit.getPluginManager().callEvent(event);
+        return !event.isCancelled();
+    }
+    private boolean allowMachineChange(Bot bot, Block block, Material material) {
+        return allowMachineChange(bot, block, Bukkit.createBlockData(material));
+    }
+    private boolean allowMachineChange(Bot bot, Block block, org.bukkit.block.data.BlockData data) {
+        List<Entity> parts = visuals.get(bot.base.id());
+        if (parts == null || parts.isEmpty() || !parts.getFirst().isValid()) return false;
+        EntityChangeBlockEvent event = new EntityChangeBlockEvent(parts.getFirst(), block, data);
+        Bukkit.getPluginManager().callEvent(event);
+        return !event.isCancelled();
+    }
+    private boolean allowPlace(Bot bot, Block target, BlockState previous, Block against, Material material, Player operator) {
+        // EntityChangeBlockEvent sees the original block, like a natural entity-caused change.
+        previous.update(true, false);
+        if (!allowMachineChange(bot, target, material)) return false;
+        target.setType(material, false);
+        if (operator == null) return true;
+        BlockPlaceEvent event = new BlockPlaceEvent(target, previous, against, new ItemStack(material), operator, true, EquipmentSlot.HAND);
+        Bukkit.getPluginManager().callEvent(event);
+        return !event.isCancelled() && event.canBuild();
     }
     private boolean correctTier(Material block, Material tool) {
         String name = tool.name();
@@ -677,7 +834,17 @@ final class MiningBots implements Listener {
     @EventHandler public void damage(VehicleDamageEvent event) { if (isPart(event.getVehicle())) event.setCancelled(true); }
     @EventHandler public void damage(EntityDamageEvent event) { if (isPart(event.getEntity())) event.setCancelled(true); }
     @EventHandler public void burn(EntityCombustEvent event) { if (isPart(event.getEntity())) event.setCancelled(true); }
-    @EventHandler(ignoreCancelled = true) public void flow(BlockFromToEvent event) { if (protectedBlock(event.getToBlock())) event.setCancelled(true); }
+    @EventHandler(ignoreCancelled = true) public void flow(BlockFromToEvent event) {
+        Block target = event.getToBlock();
+        if (protectedBlock(target)) { event.setCancelled(true); return; }
+        for (Bot bot : bots.values()) {
+            if (!bot.fluidShield || !bot.base.world().equals(target.getWorld().getUID())) continue;
+            int dx = MiningBotWork.dx(bot.base.yaw()), dz = MiningBotWork.dz(bot.base.yaw());
+            int x = target.getX()-bot.base.x(), z = target.getZ()-bot.base.z(), depth = x*dx+z*dz;
+            if (depth >= Math.max(1,bot.work.distance()) && depth <= bot.work.distance()+1 && Math.abs(x*dz-z*dx)<=1
+                    && target.getY()>=bot.base.y() && target.getY()<=bot.base.y()+2) { event.setCancelled(true); return; }
+        }
+    }
     @EventHandler(ignoreCancelled = true) public void falling(EntityChangeBlockEvent event) {
         if (event.getEntity() instanceof FallingBlock falling && protectedBlock(event.getBlock())) {
             event.setCancelled(true);
@@ -706,5 +873,25 @@ final class MiningBots implements Listener {
     private void closeViewers(Bot bot) {
         for (Player player : Bukkit.getOnlinePlayers()) if (player.getOpenInventory().getTopInventory().getHolder() instanceof Page page && page.bot == bot) player.closeInventory();
     }
-    void disable() { stopping = true; for (Bot bot : bots.values()) { closeViewers(bot); despawn(bot); removeTerminal(bot); } Bukkit.removeRecipe(recipeKey); }
+    private void updateChunks() {
+        Set<PluginChunks.Key> needed = new HashSet<>();
+        for (Bot bot : bots.values()) {
+            if (bot.failed || (bot.work.phase() == MiningBotWork.Phase.IDLE && !bot.unloading) || world(bot) == null) continue;
+            addChunkArea(needed, bot, bot.base.x(), bot.base.z(), 1);
+            if (bot.work.phase() == MiningBotWork.Phase.MINING || bot.work.phase() == MiningBotWork.Phase.RETURNING) {
+                int x = bot.base.x() + MiningBotWork.dx(bot.base.yaw()) * bot.work.distance();
+                int z = bot.base.z() + MiningBotWork.dz(bot.base.yaw()) * bot.work.distance();
+                addChunkArea(needed, bot, x, z, bot.veins.enabled() ? 11 : 4);
+            }
+            if (bot.work.pending() != null) for (var block : bot.work.pending().blocks()) addChunkArea(needed, bot, block.x(), block.z(), 0);
+            if (bot.veins.enabled() && !bot.veins.remaining().isEmpty() && bot.work.distance() >= bot.veins.checkedDepth()) {
+                var block = bot.veins.remaining().getFirst(); addChunkArea(needed, bot, block.x(), block.z(), 0);
+            }
+        }
+        PluginChunks.update(plugin, this, needed);
+    }
+    private void addChunkArea(Set<PluginChunks.Key> needed, Bot bot, int x, int z, int radius) {
+        needed.addAll(PluginChunks.area(bot.base.world(), x, z, radius));
+    }
+    void disable() { stopping = true; for (Bot bot : bots.values()) { closeViewers(bot); despawn(bot); removeTerminal(bot); } PluginChunks.update(plugin, this, Set.of()); Bukkit.removeRecipe(recipeKey); }
 }
