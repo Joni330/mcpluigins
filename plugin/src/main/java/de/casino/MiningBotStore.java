@@ -7,7 +7,10 @@ import java.util.*;
 
 /** One atomic file per bot. Never replace unreadable state with an empty inventory. */
 final class MiningBotStore {
-    record Saved(UUID id, UUID owner, UUID world, int x, int y, int z, float yaw, boolean unloading, byte[] items, MiningBotWork work) {
+    record Saved(UUID id, UUID owner, UUID world, int x, int y, int z, float yaw, boolean unloading, byte[] items, MiningBotWork work, MiningBotLighting lighting) {
+        Saved(UUID id, UUID owner, UUID world, int x, int y, int z, float yaw, boolean unloading, byte[] items, MiningBotWork work) {
+            this(id, owner, world, x, y, z, yaw, unloading, items, work, MiningBotLighting.off());
+        }
         Saved(UUID id, UUID owner, UUID world, int x, int y, int z, float yaw, boolean unloading, byte[] items) {
             this(id, owner, world, x, y, z, yaw, unloading, items, MiningBotWork.idle());
         }
@@ -19,7 +22,7 @@ final class MiningBotStore {
         try (var files = Files.list(folder)) {
             for (Path file : files.filter(p -> p.getFileName().toString().endsWith(".yml")).toList()) {
                 var yaml = new YamlConfiguration(); yaml.load(file.toFile());
-                if (yaml.getInt("version") < 1 || yaml.getInt("version") > 3) throw new IOException("Unbekanntes Bot-Format: " + file);
+                if (yaml.getInt("version") < 1 || yaml.getInt("version") > 4) throw new IOException("Unbekanntes Bot-Format: " + file);
                 MiningBotWork work = new MiningBotWork(MiningBotWork.Phase.valueOf(yaml.getString("work.phase", "IDLE")),
                         yaml.getInt("work.distance"), yaml.getInt("work.energy"), yaml.getBoolean("work.resume"),
                         yaml.contains("work.operator") ? UUID.fromString(yaml.getString("work.operator")) : null,
@@ -31,14 +34,16 @@ final class MiningBotStore {
                 UUID id = UUID.fromString(file.getFileName().toString().replace(".yml", ""));
                 result.add(new Saved(id, UUID.fromString(Objects.requireNonNull(yaml.getString("owner"))),
                         UUID.fromString(Objects.requireNonNull(yaml.getString("world"))), yaml.getInt("x"), yaml.getInt("y"), yaml.getInt("z"),
-                        (float) yaml.getDouble("yaw"), yaml.getBoolean("unloading"), Base64.getDecoder().decode(Objects.requireNonNull(yaml.getString("items"))), work));
+                        (float) yaml.getDouble("yaw"), yaml.getBoolean("unloading"), Base64.getDecoder().decode(Objects.requireNonNull(yaml.getString("items"))), work,
+                        new MiningBotLighting(yaml.getBoolean("lighting.enabled"), yaml.getInt("lighting.last-distance"))));
             }
         }
         return result;
     }
     void save(Saved state) throws IOException {
         var yaml = new YamlConfiguration();
-        yaml.set("version", 3); yaml.set("owner", state.owner().toString()); yaml.set("world", state.world().toString());
+        yaml.set("version", 4); yaml.set("owner", state.owner().toString()); yaml.set("world", state.world().toString());
+        yaml.set("lighting.enabled", state.lighting().enabled()); yaml.set("lighting.last-distance", state.lighting().lastDistance());
         yaml.set("x", state.x()); yaml.set("y", state.y()); yaml.set("z", state.z()); yaml.set("yaw", state.yaw());
         yaml.set("unloading", state.unloading());
         MiningBotWork work = state.work();

@@ -31,6 +31,12 @@ Im Bot-Lager startet der Trichter unten das Entladen beziehungsweise den Rückru
 
 ## Werkzeuge, Energie und Hindernisse
 
+### Fackeln
+
+Im Terminal schaltet das Fackelsymbol unten links die automatische Beleuchtung pro Bot ein oder aus (anfangs aus). Normale Fackeln ins Bot-Lager legen. Bei aktivierter Funktion platziert der Bot etwa alle acht Blöcke Vorwärtsfortschritt seitlich eine Bodenfackel und verbraucht dafür eine Fackel. Er benötigt freien, trockenen Platz und einen vollen Bodenblock; fehlende Fackeln oder ein ungeeigneter Platz stoppen den Abbau nicht. Platzierung beachtet BlockPlaceEvent-Schutz. Ein vorhandenes Licht am vorgesehenen Platz wird angerechnet. Einstellung und letzte Fackelposition werden gespeichert, damit der Bot beim erneuten Durchfahren keine doppelten Fackeln setzt. Bei aktivierter Funktion bleiben normale Fackeln beim Entladen als Vorrat im Bot. Nach Ausschalten werden sie mit entladen.
+
+Alle normalen, Seelen- und Redstone-Fackeln, einschließlich Wandvarianten, gelten beim Abbau als freier Durchgang und werden nicht gezielt abgebaut. Minecraft kann bestehende Wandfackeln weiterhin ablösen, wenn deren tragender Block abgebaut wird.
+
 Glow Lichen (Leuchtflechten) wird mit der Spitzhacke mit entfernt und blockiert den Abbau nicht. Die Drops entsprechen dem verwendeten Werkzeug; es wird kein zusätzlicher Flechten-Drop erfunden. Automatische Rückfahrten bei vollem Lager bleiben schrittweise; manuelle Rückrufe über Stop oder den Lager-Trichter erfolgen sofort.
 
 Der Bot wählt anhand der Minecraft-Blocktags Spitzhacke oder Schaufel und prüft die erforderliche Werkzeugstufe. Verzauberungen beeinflussen Drops, Haltbarkeit und Abbaugeschwindigkeit. Werkzeuge verschleißen und können zerbrechen. Ohne passendes Werkzeug oder Brennstoff pausiert der Bot; nach Nachfüllen arbeitet er weiter. Holz und andere Blöcke, die weder Spitzhacke noch Schaufel zugeordnet sind, halten ihn an. Container, Block-Entities, Betten, unzerstörbare Blöcke und registrierte Bot-Basen werden nicht abgebaut. Abbau löst ein abbrechbares BlockBreakEvent im Namen des startenden Spielers aus; Erfahrung wird nicht erzeugt.
