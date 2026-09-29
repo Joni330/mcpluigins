@@ -18,6 +18,7 @@ final class ItemShop implements InventoryHolder {
         new Offer(14, Material.LAPIS_LAZULI, "Lapislazuli", 500),
         new Offer(15, Material.DIAMOND, "Diamant", 625),
         new Offer(16, Material.NETHERITE_INGOT, "Netheritbarren", 12500),
+        new Offer(24, Material.EMERALD, "Smaragd", 625),
         new Offer(29, Material.GOLDEN_APPLE, "Goldener Apfel", 15000),
         new Offer(31, Material.ENCHANTED_GOLDEN_APPLE, "Verzauberter goldener Apfel", 1000000),
         new Offer(33, Material.BEACON, "Leuchtfeuer", 15000000),
