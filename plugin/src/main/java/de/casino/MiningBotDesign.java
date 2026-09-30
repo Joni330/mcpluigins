@@ -27,13 +27,14 @@ final class MiningBotDesign implements Listener {
     void enable() {
         Bukkit.getPluginManager().registerEvents(this, plugin);
         var command = Objects.requireNonNull(plugin.getCommand("miningbot"));
-        command.setTabCompleter((s,c,a,args) -> args.length == 1 ? List.of("give", "steinbruch", "erzsucher", "design", "entfernen").stream().filter(v -> v.startsWith(args[0].toLowerCase(Locale.ROOT))).toList() : List.of());
+        command.setTabCompleter((s,c,a,args) -> args.length == 1 ? List.of("give", "steinbruch", "erzsucher", "holzfaeller", "design", "entfernen").stream().filter(v -> v.startsWith(args[0].toLowerCase(Locale.ROOT))).toList() : List.of());
         command.setExecutor((sender, cmd, label, args) -> {
             if (!(sender instanceof Player player)) { sender.sendMessage("Bitte im Spiel ausführen."); return true; }
             if (args.length != 1) return false;
             if (args[0].equalsIgnoreCase("give")) { bots.give(player); return true; }
             if (args[0].equalsIgnoreCase("steinbruch")) { upgrades.give(player,AdvancedBotData.Kind.QUARRY); return true; }
             if (args[0].equalsIgnoreCase("erzsucher")) { upgrades.give(player,AdvancedBotData.Kind.SEEKER); return true; }
+            if (args[0].equalsIgnoreCase("holzfaeller")||args[0].equalsIgnoreCase("holzfäller")) { upgrades.give(player,AdvancedBotData.Kind.LUMBER); return true; }
             if (args[0].equalsIgnoreCase("entfernen")) {
                 var hit = player.getWorld().rayTraceEntities(player.getEyeLocation(), player.getEyeLocation().getDirection(), 6, .35, e -> marked(e) || bots.isPart(e));
                 if (hit == null || hit.getHitEntity() == null) { player.sendMessage("Schaue einen MiningBot-Entwurf in deiner Nähe an."); return true; }

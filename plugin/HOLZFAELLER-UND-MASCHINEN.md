@@ -1,0 +1,54 @@
+# Holzfällerbot und Maschinenübersicht
+
+Beides steckt in Casino.jar. Ein Serverneustart aktiviert das Update; Resourcepack-Änderungen sind nicht notwendig.
+
+## Holzfällerbot
+
+Crafting (auch unter /menu → Lager & Farmen → Holzfällerbot):
+
+| Eisenaxt | Kiste | Eisenaxt |
+|---|---|---|
+| Eichensetzling | Ofen | Eichensetzling |
+| leer | Lore | leer |
+
+Admin zum Testen: `/miningbot holzfaeller`.
+
+1. Station auf einem vollen Bodenblock platzieren. Zwei Blöcke darüber frei lassen.
+2. Eine Kiste/Doppelkiste direkt neben die Basisschiene stellen. Die gesamte Doppelkiste wird verwendet.
+3. Station öffnen → **Bot platzieren**. Mit dem erhaltenen Kompass einen Bodenblock im Arbeitschunk anklicken. Station und Arbeit dürfen weit auseinander liegen, müssen aber in derselben Welt sein. Der Kompass wird verbraucht. Anschließend prüft der Bot den geladenen Arbeitschunk auf vorhandene Bäume; der Status zeigt den Scanfortschritt.
+4. Im Terminal eine Axt einsetzen. **Setzlinge & Knochenmehl** öffnen: oben 18 Plätze für Setzlinge, unten 9 für optionales Knochenmehl.
+5. **Start**. Kein Brennstoff nötig. Der Ablauf lautet: **Chunk erkennen → vorhandene Bäume räumen → Runde bepflanzen → alle Setzlinge versorgen und wachsen lassen → alle Bäume gemeinsam ernten → entladen → nächste Runde**. **Stop / Rückruf** bringt ihn sofort zur Station, entlädt und pausiert dort. Nach Start wird die laufende Runde fortgesetzt.
+
+Der Bot verwendet bis zu 16 Pflanzplätze pro Chunk: Eiche, Birke, Fichte und einzelne Tropenbäume stehen in einem 4×4-Raster (lokale X-/Z-Koordinaten 3, 6, 9, 12). Für Dunkleiche, Bleicheiche, Akazie, Kirsche und Mangrove verwendet er ein großzügigeres 3×3-Raster mit bis zu 9 Baumplätzen (3, 7, 11). Dunkleiche und Bleicheiche belegen dabei je vier Setzlinge, insgesamt also bis zu 36. Die tatsächlich genutzte Anzahl hängt von geeignetem Boden, freiem Platz und den verfügbaren Setzlingen ab. Bereits vorhandene Pflanzungen aus dem alten Vierer-Raster werden weiter versorgt. Neue Plätze halten Abstand zu diesen Setzlingen; abgeerntete alte Plätze werden anschließend aus der Belegung entfernt. Ein neuer Baum darf benachbarte Setzlinge nicht überschreiben. Rund um diese Positionen muss geeigneter Gras-/Erdboden vorhanden sein, höchstens vier Blöcke über/unter der beim Platzieren gewählten Höhe. Sechs freie Blöcke über dem Pflanzpunkt sind die Mindestanforderung; große Baumarten benötigen mehr Platz. Eigene Bäume dürfen mit Ästen, Blättern und Wurzeln über den Arbeitschunk in die acht direkt benachbarten Chunks wachsen. Diese beim Wachstum erfassten Baumteile werden bei der gemeinsamen Ernte ebenfalls abgebaut; ihre Drops kommen wie gewohnt ins Botinventar. Gepflanzt wird weiterhin nur im Arbeitschunk. Ein Chunk kann einem Steinbruch- oder Holzfällerbot gehören, nicht mehreren solchen Bots zugleich.
+
+Unterstützt sind Eiche, Birke, Fichte, Tropenbaum, Akazie, Dunkleiche, Kirsche, Bleicheiche und Mangrove. Dunkleiche und Bleicheiche brauchen vier Setzlinge für eine 2×2-Pflanzung. Fichte und Tropenbaum werden einzeln gepflanzt. Netherpilze sind keine Setzlinge.
+
+Nach dem Platzieren liest der Bot den gesamten Arbeitschunk in Schritten von höchstens 4.096 Blöcken pro halber Sekunde ein. Bei normaler Welthöhe dauert der Scan ungefähr zwölf Sekunden. Nach Start und mit eingesetzter Axt erntet er zuerst die erkannten vorhandenen Bäume, bevor er neue Setzlinge pflanzt. Der Scan selbst verbraucht keine Items und baut nichts ab. Auch bereits vorhandene Holzfällerbots erhalten nach diesem Update einmalig einen Scan. Nach einem Neustart bleibt ein abgeschlossener Scan gespeichert; ein unterbrochener Scan beginnt erneut. Ein neuer Einsatzort löst einen neuen Scan aus.
+
+Als Baum gelten zusammenhängende, ungeschälte Stämme mit Bodenkontakt und einer passenden natürlichen Blattkrone; diagonale Äste und Mangrovenwurzeln werden berücksichtigt. Einzelne Holzsäulen, geschälte Stämme und vom Spieler platzierte Blätter reichen nicht aus. Minecraft speichert bei Stämmen nicht, ob sie von einem Spieler gesetzt wurden: direkt mit echten Bäumen verbundene Holzbauteile können deshalb mit erkannt werden. Der anfängliche Waldscan bleibt innerhalb des Arbeitschunks. Der Bot speichert außerdem seine eigenen Pflanzungen und die daraus gewachsenen Baumblöcke, einschließlich der Überhänge in Nachbarchunks. Dort erntet er ausschließlich die genau erfassten Positionen mit passendem Baumblocktyp, ohne benachbarte Bäume über eine Verbindung aus Blättern mit einzubeziehen. Der anfängliche Wald wird in Portionen von höchstens 256 Blöcken geräumt. Danach arbeitet der Bot in festen Runden. Er plant die Baumplätze anhand von freiem Boden und den zu Beginn verfügbaren Setzlingen und bepflanzt zuerst alle Plätze dieser Runde. Während des aktiven Pflanzens wird vorzeitiges Baumwachstum an diesen Plätzen zurückgestellt, damit keine Krone einen noch freien Pflanzplatz blockiert. Erst danach versorgt er reihum alle noch kleinen Setzlinge. Fertige Bäume bleiben stehen, bis auch der letzte Baum dieser Runde ausgewachsen ist. Anschließend werden alle gespeicherten Baumblöcke der Runde gemeinsam in einem Arbeitsschritt geerntet. Volles Lager, Werkzeugbruch oder ein Schutzbereich können die Ernte unterbrechen; nach Behebung setzt er die verbliebene Ernte fort. Die Axt verliert nur noch alle acht erfolgreich abgebauten Blöcke einen Haltbarkeitspunkt; Stämme, Blätter und Wurzeln zählen mit. Die Verzauberung Haltbarkeit reduziert diesen Verbrauch zusätzlich. Der Zähler bleibt über Ernten, Stop/Start und Neustarts erhalten. Auch Axt-Verzauberungen und individuelle maximale Haltbarkeit bleiben berücksichtigt. Gedroppte Setzlinge landen zuerst im Pflanzvorrat, übrige Beute in den 216 Lagerplätzen. Eigene Bäume werden anschließend nachgepflanzt. Nach einer vollständigen Runde oder bei vollem Lager entlädt der Bot an der Station und setzt automatisch fort. Eine normale Entladung zeigt „Runde geerntet“; „Lager voll“ wird nur gemeldet, wenn neue Beute tatsächlich nicht mehr hineinpasst. Fehlende/volle Ausgabekiste lässt ihn warten; die Items bleiben erhalten.
+
+Während der Arbeit und der automatischen Entladung sammelt der Bot regelmäßig herumliegende Baum-Drops im gesamten Arbeitschunk auf: Stämme, Blätter, Wurzeln, Setzlinge/Propagulen, Äpfel und Stöcke. Das erfasst auch nachträgliche Drops durch Blattzerfall. Die Ausschlussliste, Aufnahmeverzögerung, fremde Itembesitzer und abgebrochene InventoryPickupItemEvents werden berücksichtigt. Ausrüstung und andere nicht zu Bäumen gehörende Items bleiben liegen. Nach manuellem Stop sammelt der Bot nicht weiter.
+
+Setzlinge kommen zuerst in „Setzlinge & Knochenmehl“, damit sie zum Nachpflanzen verfügbar bleiben. Überschüsse gehen ins normale Lager. Sobald im Pflanzvorrat Platz entsteht, werden dort gelagerte Setzlinge nachgefüllt, auch vor dem Entladen. Passt nur ein Teil eines Bodenstapels, bleibt der Rest liegen. Die neue Inventarbelegung wird gespeichert, bevor Bodenitems entfernt oder verkleinert werden; bei einem Speicherfehler bleiben sie unangetastet.
+
+Knochenmehl ist optional und wird pro Wachstumsversuch verbraucht. Ohne Knochenmehl wartet der Bot auf natürliches Wachstum; dessen Random-Ticks hängen weiterhin von Minecrafts Spieler-/Chunk-Ticking ab. Der aktive Bot hält den Stationsbereich sowie den Arbeitschunk mit seinen acht direkten Nachbarchunks für Wachstum und vollständige Kronenernte geladen und kann mit Knochenmehl auch offline weiterarbeiten. Stoppen gibt die nicht mehr benötigten Chunk-Tickets frei. Ausloggen setzt den Bot nicht auf Stop.
+
+Rundenphase, geplante Pflanzpunkte, gewachsene Stämme, Baumblöcke, Inventar und laufende Abbauschritte werden gespeichert. Der Status zeigt die Phase sowie den Fortschritt, etwa 12/16 gewachsene Bäume. Ein gespeichertes Wachstumsereignis zählt erst, wenn der erwartete Stamm tatsächlich in der Welt steht und die Setzlinge dort verschwunden sind. Bei fehlenden oder blockierten Setzlinggruppen erntet der Bot nicht vorzeitig. Entfernte vollständige Setzlinggruppen werden am vorgesehenen Platz nachgepflanzt; beschädigte Teilgruppen müssen vervollständigt werden. Nach einem regulären Neustart setzt der Bot die gespeicherte Runde fort. Bereits bestehende Bots ohne Rundenphase beginnen einmalig mit dem Räumen ihrer erfassten Bäume und übernehmen verbliebene Setzlinge in die erste Runde. Wie bei den Miningbots sind Welt und Plugin-Dateien bei einem harten Absturz keine gemeinsame Transaktion. Ein neuer Einsatzort verwirft die Zuordnung alter Pflanzungen; bestehende Bäume bleiben dann normal in der Welt stehen.
+
+Schutzprüfungen: StructureGrowEvent und EntityChangeBlockEvent, beim Pflanzen/Abbauen zusätzlich Spieler-Events, solange der Besitzer online ist. Schutzplugins, die ausschließlich Spieler-Events beachten, schützen Offline-Automation möglicherweise nicht. Wachstum über die Arbeitschunkgrenze ist für eigene Bäume im beschriebenen Kronenbereich erlaubt. Weltgrenze, Container, Betten, geschützte Stationen und von Schutzplugins gesperrte Bereiche bleiben geschützt. Nicht verfügbare Kronen werden nicht als bereits abgeerntet vergessen.
+
+## Maschinenübersicht
+
+Direkt `/menu` → **Maschinenübersicht**. Anzeige von eigenen Bots und Bots des aktuellen Lagerteams, Admins sehen alle Bots. Die Übersicht zeigt Typ, Standort, Status und bei Bots zusätzlich die Arbeitsposition. Sie aktualisiert sich alle fünf Sekunden, hat mehrere Seiten und einen Aktualisieren-Knopf. Sie erlaubt keine Teleports oder Bedienung aus der Ferne.
+
+Enthalten sind ausschließlich Tunnelbot, Steinbruchbot, Erzsucher und Holzfällerbot. Trichter, Öfen, Mülleimer, Sender und Empfänger erscheinen nicht in der Übersicht.
+
+Bot-Stationen sind aus ihren Speicherdateien sofort bekannt. Der frühere Geräteindex in `plugins/Casino/maschinen.yml` wird nicht mehr gelesen oder beschrieben; vorhandene Dateien können liegen bleiben.
+
+
+
+## Prüfung
+
+Automatisierte Tests: Pflanzplätze in positiven/negativen Chunks, 2×2-Setzlingsbedarf, Baum-/Bodenarten, vorhandene Bäume auf unterschiedlichen Höhen, natürliche und platzierte Blätter, Chunkgrenzen und Scanbudget, Speichern und Laden der Pflanzungen und des Abbaujournals sowie Boden-Drop-Aufnahme, Teilstapel bei vollem Lager, Setzlingsnachfüllung, Metadaten und Speicherfehler beim Aufsammeln sowie Rundenübergänge, die gemeinsame Ernte erst nach dem letzten Baum, reihum verteiltes Knochenmehl, abgebrochenes Wachstum und gespeicherte Runden über Stop/Neustart sowie vorhandene Plugin-Tests.
+
+Ingame noch prüfen: Rezept, Kompass, alle Vorrats-/Lagerseiten, natürliches Wachstum und Knochenmehl, Ernte/Nachpflanzen, Axtbruch, voller Speicher/volle Doppelkiste, Stop/Start, Chunkgrenze, regulärer Neustart, Teamwechsel, Erstscan im vorhandenen Wald und Übersicht ausschließlich über Bots. Kein laufender Server wurde durch Codex neu gestartet.

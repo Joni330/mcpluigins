@@ -904,5 +904,6 @@ final class MiningBots implements Listener {
     private void addChunkArea(Set<PluginChunks.Key> needed, Bot bot, int x, int z, int radius) {
         needed.addAll(PluginChunks.area(bot.base.world(), x, z, radius));
     }
+    List<MachineOverview.Entry> machineEntries(){return bots.values().stream().map(b->new MachineOverview.Entry(b.base.id().toString(),b.base.owner(),b.base.world(),b.base.x(),b.base.y(),b.base.z(),"Tunnelbot",Material.IRON_PICKAXE,b.status,"Station · Entfernung: "+b.work.distance()+" Blöcke",false)).toList();}
     void disable() { stopping = true; for (Bot bot : bots.values()) { closeViewers(bot); despawn(bot); removeTerminal(bot); } PluginChunks.update(plugin, this, Set.of()); Bukkit.removeRecipe(recipeKey); }
 }

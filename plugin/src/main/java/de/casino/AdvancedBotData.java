@@ -8,7 +8,7 @@ import de.casino.MiningBotVeins.Pos;
 
 /** Separate versioned files leave existing tunnel bots untouched. */
 final class AdvancedBotData {
-    enum Kind { QUARRY, SEEKER }
+    enum Kind { QUARRY, SEEKER, LUMBER }
     enum Phase { IDLE, WORKING, UNLOADING, COMPLETE }
     record Change(Pos position,String before,String after) {}
     static final class State {
@@ -17,9 +17,13 @@ final class AdvancedBotData {
         Pos station, position, resumePosition, pendingPosition;
         String pendingBefore, pendingAfter;
         List<Change> pendingOthers=new ArrayList<>();
-        boolean configured, resume;
+        boolean configured, resume, treesScanned;
+        LumberCycle.Stage lumberStage=LumberCycle.Stage.CLEARING;
+        boolean lumberPlanned;
+        Map<Pos,Pos> grownTrunks=new LinkedHashMap<>();
         int chunkX,chunkZ,top,cursor,energy,heading; int fuelCredit; int[] toolUses=new int[3];
         Set<String> excluded=new LinkedHashSet<>();
+        Map<Pos,String> planted=new LinkedHashMap<>(),treeBlocks=new LinkedHashMap<>();
         Set<String> ores=new LinkedHashSet<>(List.of("DIAMOND_ORE"));
         List<Pos> route=new ArrayList<>(), vein=new ArrayList<>();
         byte[] items=new byte[0];
@@ -38,6 +42,11 @@ final class AdvancedBotData {
         y.set("pending.position",pos(s.pendingPosition)); y.set("pending.before",s.pendingBefore); y.set("pending.after",s.pendingAfter);
         y.set("pending.others",s.pendingOthers.stream().map(c->Map.of("position",pos(c.position()),"before",c.before(),"after",c.after())).toList());
         y.set("excluded",new ArrayList<>(s.excluded)); y.set("items",Base64.getEncoder().encodeToString(s.items));
+        y.set("planted",s.planted.entrySet().stream().map(e->Map.of("position",pos(e.getKey()),"type",e.getValue())).toList());
+        y.set("tree-blocks",s.treeBlocks.entrySet().stream().map(e->Map.of("position",pos(e.getKey()),"type",e.getValue())).toList());
+        y.set("trees-scanned",s.treesScanned);
+        y.set("lumber-stage",s.lumberStage.name());y.set("lumber-planned",s.lumberPlanned);
+        y.set("grown-trunks",s.grownTrunks.entrySet().stream().map(e->Map.of("root",pos(e.getKey()),"trunk",pos(e.getValue()))).toList());
         writeRevision(s.id,y.saveToString());
     }
     List<State> load() throws Exception {
@@ -50,9 +59,14 @@ final class AdvancedBotData {
             State s=new State(); s.id=id(p); s.owner=UUID.fromString(y.getString("owner")); s.world=UUID.fromString(y.getString("world"));
             s.kind=Kind.valueOf(y.getString("kind")); s.phase=Phase.valueOf(y.getString("phase")); s.station=read(y.getIntegerList("station")); s.position=read(y.getIntegerList("position")); s.resumePosition=read(y.getIntegerList("resume-position"));
             s.configured=y.getBoolean("configured"); s.resume=y.getBoolean("resume"); s.chunkX=y.getInt("chunk-x"); s.chunkZ=y.getInt("chunk-z"); s.top=y.getInt("top"); s.cursor=y.getInt("cursor"); s.energy=y.getInt("energy"); s.heading=y.getInt("heading");
+            s.treesScanned=y.getBoolean("trees-scanned",false);
+            s.lumberStage=LumberCycle.Stage.valueOf(y.getString("lumber-stage","CLEARING"));s.lumberPlanned=y.getBoolean("lumber-planned",false);
+            for(var row:y.getMapList("grown-trunks"))s.grownTrunks.put(readNumbers((List<?>)row.get("root")),readNumbers((List<?>)row.get("trunk")));
             s.fuelCredit=y.getInt("fuel-credit"); var uses=y.getIntegerList("tool-uses"); for(int i=0;i<Math.min(3,uses.size());i++)s.toolUses[i]=uses.get(i); s.excluded=new LinkedHashSet<>(y.getStringList("excluded")); s.ores=new LinkedHashSet<>(y.getStringList("ores")); s.route=positions(y.getList("route",List.of())); s.vein=positions(y.getList("vein",List.of()));
             s.pendingPosition=read(y.getIntegerList("pending.position")); s.pendingBefore=y.getString("pending.before"); s.pendingAfter=y.getString("pending.after"); s.items=Base64.getDecoder().decode(y.getString("items"));
             for(var row:y.getMapList("pending.others"))s.pendingOthers.add(new Change(readNumbers((List<?>)row.get("position")),(String)row.get("before"),(String)row.get("after")));
+            for(var row:y.getMapList("planted"))s.planted.put(readNumbers((List<?>)row.get("position")),(String)row.get("type"));
+            for(var row:y.getMapList("tree-blocks"))s.treeBlocks.put(readNumbers((List<?>)row.get("position")),(String)row.get("type"));
             if(s.station==null || s.position==null || s.cursor<0 || s.energy<0) throw new IllegalStateException("Beschädigte Bot-Daten: "+p);
             result.add(s);
         } return result;

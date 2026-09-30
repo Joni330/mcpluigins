@@ -9,7 +9,7 @@ final class BotInventory {
         for (int i = 0; i < items.length; i++) result[i] = items[i] == null ? null : items[i].clone();
         return result;
     }
-    static boolean empty(ItemStack item) { return item == null || item.getType().isAir() || item.getAmount() <= 0; }
+    static boolean empty(ItemStack item) { return item == null || item.getAmount() <= 0 || item.isEmpty(); }
     static int insert(ItemStack[] items, int from, int to, ItemStack offered) {
         int limit = Math.min(64, offered.getMaxStackSize());
         int[] room = new int[to - from]; boolean[] matching = new boolean[room.length];

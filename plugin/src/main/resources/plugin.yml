@@ -6,7 +6,7 @@ description: Casino-Konten, Wechselautomaten und Kistenmenü
 commands:
   miningbot:
     description: MiningBot-Item erhalten oder einen Entwurf verwalten
-    usage: /miningbot <give|steinbruch|erzsucher|design|entfernen>
+    usage: /miningbot <give|steinbruch|erzsucher|holzfaeller|design|entfernen>
     permission: casino.admin
   back:
     description: Zu deinem letzten Todespunkt teleportieren
@@ -37,7 +37,7 @@ commands:
     usage: /lagerteam
   lager:
     description: Lagerterminal im Casino-Plugin
-    usage: /lager [give|handy|sender|zuordnen]
+    usage: /lager [give|handy|sender|empfaenger|mülleimer|kategorie|zuordnen]
   payload:
     description: Als Admin Casino-Guthaben gutschreiben
     usage: /payload <Spieler> <Betrag>

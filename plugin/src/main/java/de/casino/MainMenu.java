@@ -15,7 +15,8 @@ final class MainMenu implements Listener {
     private final JavaPlugin plugin;
     private final Accounts accounts;
     private final StorageTeams teams;
-    private final Backpacks backpacks;
+    private final Backpacks backpacks; private MachineOverview machines;
+    void machines(MachineOverview value){machines=value;value.back(p->open(p,"Hauptmenü",0));}
     private static final class Page implements InventoryHolder {
         final UUID owner;
         final String section;
@@ -58,6 +59,7 @@ final class MainMenu implements Listener {
         if (!section.equals("Hauptmenü")) icon(page, 45, Material.ARROW, "Zurück zum Hauptmenü");
         switch (section) {
             case "Hauptmenü" -> {
+                icon(page,40,Material.COMPARATOR,"Maschinenübersicht","Miningbots und Holzfällerbots von dir und deinem Team");
                 icon(page, 20, Material.GOLD_INGOT, "Konto", "Guthaben und Überweisungen");
                 icon(page, 22, Material.PLAYER_HEAD, "Team", "Mitglieder und Teamverwaltung");
                 icon(page, 24, Material.BARREL, "Lager & Farmen", "Lager-Handy, Sender und Filter");
@@ -132,15 +134,35 @@ final class MainMenu implements Listener {
                 }
             }
             case "Lager & Farmen" -> {
+                icon(page,13,Material.IRON_AXE,"Holzfällerbot","Klicken: Rezept und Bedienung");
+                icon(page, 40, Material.DAYLIGHT_DETECTOR, "Aufzug", "Klicken: Rezept und Bedienung ansehen");
+                icon(page,38,Material.HOPPER,"Hopper MK2 / MK3 / MK4","5 Eisen- / Gold- / Diamantblöcke in Trichterform.","Normaler Trichter in die Mitte.","Bis zu 4× / 8× / 16× schneller; Redstone stoppt.");
+                icon(page,42,Material.FURNACE,"Ofen MK2 / MK3 / MK4","Normaler Ofen, umgeben von 8 Blöcken.","Eisen: 4× · Gold: 8× · Diamant: 16×.");
+                icon(page,29,Material.BARREL,"Mülleimer","Craften: Eisen oben, links und rechts vom Fass; Lavaeimer darunter.","Trichter anschließen: Items werden dauerhaft gelöscht.");
+                icon(page,31,Material.DISPENSER,"Lager-Empfänger","Rezept wie Sender, aber Werfer in der Mitte.","Mit Lager-Handy schleichend rechtsklicken: verbinden.","Rechtsklick: Itemauswahl und Zielmenge.","Kiste daneben: bis zu 16 Items alle 5 Sekunden.");
+                icon(page,33,Material.CHEST,"Lagerkategorien","Im Lager: Kiste unten wechselt Kategorie.","Klick: 1 Item · Shift-Klick: bis zu 64.","/lager kategorie Holz holz", "Dabei aufs Lager schauen oder Handy halten.");
                 icon(page, 20, Material.BARREL, "Lagerterminal", "Rechtsklick am Terminal öffnet dein Lager.", "450 Plätze · bis zu 1.024 Items pro Platz");
                 icon(page, 22, Material.COMPASS, "Lager-Handy", "Schleichen + Rechtsklick am Terminal: verbinden", "Rechtsklick mit deinem Handy: Fernzugriff");
                 icon(page, 24, Material.DROPPER, "Lager-Sender", "Mit verbundenem Handy schleichend rechtsklicken.", "Leere Hand + Schleichen: Filtermenü", "Überlaufkiste vor die Ausgabeseite stellen.");
             }
             case "Hilfe" -> {
-                icon(page, 31, Material.DAYLIGHT_DETECTOR, "Aufzug", "Klicken: Rezept und Bedienung ansehen");
                 icon(page, 20, Material.PAPER, "Konto & Geld", "/casino konto", "/pay <Spieler> <Betrag>");
                 icon(page, 22, Material.PLAYER_HEAD, "Team-Befehle", "/lagerteam erstellen <Name>", "/lagerteam einladen <Spieler>", "/lagerteam annehmen <Team>", "/lagerteam info");
                 icon(page, 24, Material.BOOK, "Navigation", "/menu öffnet das Hauptmenü.", "Pfeil: Zurück · Barriere: Schließen");
+                icon(page, 29, Material.RED_BED, "Homes", "Bis zu 3 persönliche Homes speichern.",
+                        "/sethome <Name> · Home setzen", "/home <Name> · Zum Home teleportieren",
+                        "/home list · Alle Homes anzeigen", "/delhome <Name> · Home löschen");
+                icon(page, 31, Material.BLUE_BED, "Teamhome", "Ein gemeinsames Home pro Team.",
+                        "/setteamhome · Teamhome setzen", "/teamhome · Zum Teamhome teleportieren");
+                icon(page, 33, Material.RECOVERY_COMPASS, "Zurück zum Todespunkt", "/back",
+                        "Teleportiert dich zu deinem letzten Todespunkt.", "Ein neuer Tod ersetzt den bisherigen Todespunkt.");
+            }
+            case "Holzfällerbot" -> {
+                icon(page,10,Material.IRON_AXE,"Eisenaxt");icon(page,11,Material.CHEST,"Kiste");icon(page,12,Material.IRON_AXE,"Eisenaxt");
+                icon(page,19,Material.OAK_SAPLING,"Eichensetzling");icon(page,20,Material.FURNACE,"Ofen");icon(page,21,Material.OAK_SAPLING,"Eichensetzling");icon(page,29,Material.MINECART,"Lore");
+                icon(page,24,Material.FURNACE_MINECART,"Holzfällerbot","Station setzen · im Terminal Kompass holen","Bot mit dem Kompass im Arbeitschunk platzieren","Axt und Setzlinge einlegen · Start","Knochenmehl optional · 216 Lagerplätze");
+                icon(page,33,Material.BOOK,"Baumfarm vorbereiten","Chunk prüfen → vorhandene Bäume räumen → Runde pflanzen","Alle Setzlinge versorgen → alle Bäume gemeinsam ernten","Knochenmehl optional · ohne auf natürliches Wachstum warten","Bis zu 16 Pflanzplätze · breite/2×2-Bäume: 9","Pflanzplätze brauchen freien Gras-/Erdboden auf ähnlicher Höhe","Kiste oder Doppelkiste neben die Stationsschiene","Dunkleiche/Bleicheiche: 4 Setzlinge pro Pflanzung");
+                icon(page,45,Material.ARROW,"Zurück zu Lager & Farmen");
             }
             case "Aufzug" -> {
                 for (int slot : new int[]{10, 11, 12, 19, 21, 28, 29, 30})
@@ -150,7 +172,7 @@ final class MainMenu implements Listener {
                 icon(page, 25, Material.BOOK, "So funktioniert es", "Aufzüge direkt übereinander platzieren.",
                         "Auf dem Sensor springen: nächste Etage hoch.", "Schleichen: nächste Etage runter.",
                         "Über dem Ziel zwei Blöcke freilassen.", "Decken zwischen den Etagen stören nicht.");
-                icon(page, 45, Material.ARROW, "Zurück zur Hilfe");
+                icon(page, 45, Material.ARROW, "Zurück zu Lager & Farmen");
             }
         }
         player.openInventory(page.inventory);
@@ -167,11 +189,12 @@ final class MainMenu implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (!p.isOnline() || p.getOpenInventory().getTopInventory().getHolder() != page) return;
             if (slot == 53) { p.closeInventory(); return; }
-            if (slot == 45 && !page.section.equals("Hauptmenü")) { open(p, page.section.equals("Aufzug") ? "Hilfe" : page.section.equals("Kontoverlauf") ? "Konto" : "Hauptmenü", 0); return; }
+            if (slot == 45 && !page.section.equals("Hauptmenü")) { open(p, (page.section.equals("Aufzug")||page.section.equals("Holzfällerbot")) ? "Lager & Farmen" : page.section.equals("Kontoverlauf") ? "Konto" : "Hauptmenü", 0); return; }
             switch (page.section) {
-                case "Hilfe" -> { if (slot == 31) open(p, "Aufzug", 0); }
+                case "Lager & Farmen" -> { if (slot == 40) open(p, "Aufzug", 0);else if(slot==13)open(p,"Holzfällerbot",0); }
                 case "Hauptmenü" -> {
-                    if (slot == 20) open(p, "Konto", 0);
+                    if(slot==40&&machines!=null)machines.open(p);
+                    else if (slot == 20) open(p, "Konto", 0);
                     else if (slot == 22) open(p, "Team", 0);
                     else if (slot == 24) open(p, "Lager & Farmen", 0);
                     else if (slot == 32) open(p, "Hilfe", 0);

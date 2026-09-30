@@ -27,7 +27,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     private final NamespacedKey virtualItems, virtualCounts, legacyBackup;
     private final Map<UUID, UUID> remoteUsers = new HashMap<>();
     private boolean stopping;
-    private StorageSenders senders;
+    private StorageSenders senders; private StorageDevices devices; private HopperMk2 hopperMk2;
     private record SearchRequest(Store store, boolean remote) {}
     private record SearchCursor(UUID store, String query, int slot) {}
     private final Map<UUID, SearchRequest> searching = new java.util.concurrent.ConcurrentHashMap<>();
@@ -37,7 +37,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     private static final class Store {
         final Location location;
         final UUID id;
-        final List<Page> pages = new ArrayList<>();
+        final List<Page> pages = new ArrayList<>(); final Map<String,String> categories=StorageCategories.defaults(); final List<Page> categoryPages=new ArrayList<>();
         final List<Craft> crafts = new ArrayList<>();
         VirtualStorage<ItemStack> data = new VirtualStorage<>(450);
         boolean failed;
@@ -47,7 +47,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             for (int i = 0; i < 10; i++) pages.add(new Page(this, i));
         }
         List<org.bukkit.entity.HumanEntity> viewers() {
-            return java.util.stream.Stream.concat(pages.stream().map(p -> p.inventory),
+            return java.util.stream.Stream.concat(java.util.stream.Stream.concat(pages.stream(),categoryPages.stream()).map(p -> p.inventory),
                     crafts.stream().map(c -> c.inventory)).flatMap(i -> i.getViewers().stream()).distinct().toList();
         }
         ItemStack[] items() {
@@ -58,15 +58,17 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     }
     private static final class Page implements InventoryHolder {
         final Store store;
-        final int index;
+        final int index; final String category; final int[] indices=new int[45];
         final Inventory inventory;
-        Page(Store store, int index) {
-            this.store = store; this.index = index;
-            inventory = Bukkit.createInventory(this, 54, Component.text("Lager · Seite " + (index + 1) + "/10"));
+        Page(Store store, int index) { this(store,index,"Alle"); }
+        Page(Store store,int index,String category) {
+            this.store = store; this.index = index; this.category=category; Arrays.fill(indices,-1);
+            inventory = Bukkit.createInventory(this, 54, Component.text(category+" · Seite " + (index + 1) + "/10"));
             for (int i = 45; i < 54; i++) control(i, Material.GRAY_STAINED_GLASS_PANE, " ");
             control(46, Material.COMPASS, "Suchen · Namen im Chat eingeben");
             control(47, Material.HOPPER, "Sortieren · Links: Itemtyp / Rechts: Stapelgröße");
             control(48, Material.CRAFTING_TABLE, "Werkbank · Zutaten aus diesem Lager");
+            control(50,Material.CHEST,"Kategorie: "+category+" · Links: wechseln / Rechts: eigene anlegen");
             control(51, Material.SPYGLASS, "Nächster Suchtreffer");
             if (index > 0) control(45, Material.ARROW, "Vorherige Seite");
             control(49, Material.PAPER, "Seite " + (index + 1) + "/10 · 450 Lagerplätze");
@@ -306,7 +308,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     }
     void enable() {
         senders = new StorageSenders(plugin, this, teams);
-        senders.enable();
+        senders.enable(); devices=new StorageDevices(plugin,this,teams);devices.enable();hopperMk2=new HopperMk2(plugin);hopperMk2.enable();
         Bukkit.getPluginManager().registerEvents(this, plugin);
         Objects.requireNonNull(plugin.getCommand("lager")).setExecutor(this);
         Objects.requireNonNull(plugin.getCommand("lager")).setTabCompleter(this);
@@ -407,6 +409,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         String storedId = pdc.get(identity, PersistentDataType.STRING);
         UUID id = storedId == null ? UUID.randomUUID() : UUID.fromString(storedId);
         Store store = new Store(block.getLocation(), id);
+        String categoryData=pdc.get(new NamespacedKey(plugin,"storage_categories"),PersistentDataType.STRING); if(categoryData!=null){var yaml=new org.bukkit.configuration.file.YamlConfiguration();try{yaml.loadFromString(categoryData);store.categories.clear();store.categories.put("Alle","*");for(var row:yaml.getMapList("categories")){String name=String.valueOf(row.get("name")),filter=String.valueOf(row.get("filter"));if(!name.equals("Alle"))store.categories.put(name,filter);}}catch(Exception ex){throw new IllegalStateException("Ungültige Kategorien",ex);}}
         for (int i = 0; i < items.length; i++) {
             boolean empty = items[i] == null || items[i].getType().isAir();
             if (virtual && (empty != (counts[i] == 0))) throw new IllegalStateException("Lagermenge passt nicht zum Item.");
@@ -429,6 +432,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         String currentId = barrel.getPersistentDataContainer().get(identity, PersistentDataType.STRING);
         if (currentId != null && !store.id.toString().equals(currentId)) throw new IllegalStateException("Das Lagerterminal wurde ersetzt.");
         var pdc = barrel.getPersistentDataContainer();
+        var categoryYaml=new org.bukkit.configuration.file.YamlConfiguration();categoryYaml.set("categories",store.categories.entrySet().stream().map(e->Map.of("name",e.getKey(),"filter",e.getValue())).toList());pdc.set(new NamespacedKey(plugin,"storage_categories"),PersistentDataType.STRING,categoryYaml.saveToString());
         byte[] old = pdc.get(contents, PersistentDataType.BYTE_ARRAY);
         if (old != null && !pdc.has(legacyBackup, PersistentDataType.BYTE_ARRAY)) pdc.set(legacyBackup, PersistentDataType.BYTE_ARRAY, old);
         int[] counts = new int[450];
@@ -462,17 +466,23 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         return true;
     }
     private void render(Store store) {
-        for (int i = 0; i < 450; i++) {
-            var entry = store.data.get(i);
-            ItemStack icon = null;
-            if (entry != null) {
-                icon = entry.item().clone(); icon.setAmount(1);
-                var meta = icon.getItemMeta();
-                List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
-                lore.add(Component.text("Im Lager: " + entry.count() + " / 1.024"));
-                meta.lore(lore); icon.setItemMeta(meta);
-            }
-            store.pages.get(StorageLayout.page(i)).inventory.setItem(StorageLayout.slot(i), icon);
+        for(Page page:java.util.stream.Stream.concat(store.pages.stream(),store.categoryPages.stream()).toList())renderPage(page);
+    }
+    private void renderPage(Page page){
+        List<Integer> matches=new ArrayList<>();String filter=page.store.categories.getOrDefault(page.category,"*");
+        for(int i=0;i<450;i++){
+            var entry=page.store.data.get(i);
+            if(page.category.equals("Alle")){matches.add(i);continue;}
+            if(entry==null)continue;ItemStack item=entry.item();
+            String name=item.hasItemMeta()&&item.getItemMeta().hasDisplayName()?net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(item.getItemMeta().displayName()):"";
+            if(StorageCategories.matches(item.getType().name(),item.getType().isBlock(),name,filter))matches.add(i);
+        }
+        for(int slot=0;slot<45;slot++){
+            int offset=page.index*45+slot,index=offset<matches.size()?matches.get(offset):-1;page.indices[slot]=index;
+            var entry=index<0?null:page.store.data.get(index);ItemStack icon=null;
+            if(entry!=null){icon=entry.item().clone();icon.setAmount(1);var meta=icon.getItemMeta();List<Component> lore=meta.lore()==null?new ArrayList<>():new ArrayList<>(meta.lore());
+                lore.add(Component.text("Im Lager: "+entry.count()+" / 1.024"));lore.add(Component.text("Klick: 1 · Shift-Klick: bis zu 64"));meta.lore(lore);icon.setItemMeta(meta);}
+            page.inventory.setItem(slot,icon);
         }
     }
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
@@ -489,6 +499,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     }
     @EventHandler(priority = EventPriority.HIGH)
     public void interact(PlayerInteractEvent event) {
+        if(devices!=null&&devices.isDevice(event.getClickedBlock()))return;
         if (isPhone(event.getItem()) && (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)) {
             if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.useInteractedBlock() == Event.Result.DENY) return;
             event.setCancelled(true);
@@ -512,9 +523,10 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             event.getPlayer().sendMessage("Das Lager konnte nicht geladen werden. Bitte einen Admin informieren.");
         }
     }
-    private void open(Player player, Store store, int page, boolean remote) {
+    private void open(Player player, Store store, int page, boolean remote) {openCategory(player,store,page,remote,"Alle");}
+    private void openCategory(Player player,Store store,int page,boolean remote,String category){
         PluginChunks.acquire(plugin, this, new PluginChunks.Key(store.location.getWorld().getUID(), store.location.getBlockX() >> 4, store.location.getBlockZ() >> 4));
-        Inventory target = store.pages.get(page).inventory;
+        Page view;if(category.equals("Alle"))view=store.pages.get(page);else{view=new Page(store,page,category);store.categoryPages.add(view);}renderPage(view);Inventory target=view.inventory;
         player.openInventory(target);
         if (player.getOpenInventory().getTopInventory() == target && remote) remoteUsers.put(player.getUniqueId(), store.id);
         else remoteUsers.remove(player.getUniqueId());
@@ -588,15 +600,15 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         if (event.isCancelled()) return;
         if (slot >= 0 && slot < 45) {
             event.setCancelled(true);
-            if (event.getClick() != ClickType.LEFT && event.getClick() != ClickType.RIGHT) return;
+            if (event.getClick() != ClickType.LEFT && event.getClick() != ClickType.RIGHT && event.getClick()!=ClickType.SHIFT_LEFT) return;
             ItemStack cursor = p.getItemOnCursor();
             if (cursor != null && !cursor.getType().isAir()) {
                 deposit(p, store, cursor, -1); return;
             }
-            int index = page.index * 45 + slot;
+            int index = page.indices[slot];if(index<0)return;
             var entry = store.data.get(index);
             if (entry == null) return;
-            int amount = Math.min(entry.count(), event.getClick() == ClickType.RIGHT ? 1 : Math.min(64, entry.item().getMaxStackSize()));
+            int amount = StorageLayout.withdrawal(entry.count(),entry.item().getMaxStackSize(),event.getClick()==ClickType.SHIFT_LEFT);
             ItemStack[] destination = Arrays.stream(p.getInventory().getStorageContents()).map(i -> i == null ? null : i.clone()).toArray(ItemStack[]::new);
             int left = amount;
             for (int pass = 0; pass < 2; pass++) for (int i = 0; i < destination.length && left > 0; i++) {
@@ -631,6 +643,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             event.setCancelled(true);
             if (previouslyCancelled) return;
             boolean wasRemote = store.id.equals(remoteUsers.get(p.getUniqueId()));
+            if(slot==50){ if(event.isRightClick()){p.sendMessage("Eigene Kategorie: /lager kategorie <Name> <Suchfilter,weitere Filter> · Löschen: /lager kategorie <Name> löschen");return;} List<String> names=new ArrayList<>(store.categories.keySet());String category=names.get((Math.max(0,names.indexOf(page.category))+1)%names.size());Bukkit.getScheduler().runTask(plugin,()->{if(p.getOpenInventory().getTopInventory()==page.inventory&&canUse(p,store))openCategory(p,store,0,wasRemote,category);});return;}
             if (slot == 48 && event.getClick() == ClickType.LEFT) {
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     if (p.getOpenInventory().getTopInventory() != page.inventory || !canUse(p, store)) return;
@@ -673,7 +686,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             Bukkit.getScheduler().runTask(plugin, () -> {
                 if (p.isOnline() && p.getOpenInventory().getTopInventory() == page.inventory && canUse(p, store)) {
                     flush(store);
-                    if (!store.failed) open(p, store, next, remote);
+                    if (!store.failed) openCategory(p, store, next, remote,page.category);
                 }
             });
         }
@@ -776,7 +789,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             releaseIfIdle(craft.store);
         }
         if (event.getInventory().getHolder() instanceof Page page) {
-            flush(page.store);
+            flush(page.store); if(!stopping)Bukkit.getScheduler().runTask(plugin,()->{if(page.inventory.getViewers().isEmpty())page.store.categoryPages.remove(page);});
             remoteUsers.remove(event.getPlayer().getUniqueId());
             releaseIfIdle(page.store);
         }
@@ -825,7 +838,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         opened.values().stream().filter(s -> s.location.getWorld().equals(event.getWorld())).forEach(this::flush);
     }
     void disable() {
-        if (senders != null) senders.disable();
+        if (senders != null) senders.disable(); if(devices!=null)devices.disable();if(hopperMk2!=null)hopperMk2.disable();
         stopping = true;
         for (Store store : List.copyOf(opened.values())) {
             for (var viewer : store.viewers()) viewer.closeInventory();
@@ -836,6 +849,27 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         PluginChunks.update(plugin, this, Set.of());
     }
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if(args.length>=1&&args[0].equalsIgnoreCase("kategorie")){
+            if(!(sender instanceof Player p)){sender.sendMessage("Bitte im Spiel ausführen.");return true;}
+            Store store=null;boolean remote=false;
+            if(p.getOpenInventory().getTopInventory().getHolder() instanceof Page page) {store=page.store;remote=store.id.equals(remoteUsers.get(p.getUniqueId()));}
+            else {
+                Block target=p.getTargetBlockExact(8);
+                if(terminal(target)&&allowed(p,target))store=load(target);
+                else {String link=senderLink(p,p.getInventory().getItemInMainHand());if(link!=null&&senderTargetProblem(p.getUniqueId(),p.getWorld(),link)==null){String[] parts=link.split(";");store=load(p.getWorld().getBlockAt(Integer.parseInt(parts[1]),Integer.parseInt(parts[2]),Integer.parseInt(parts[3])));remote=true;}}
+            }
+            if(store==null||!canUse(p,store,remote)){sender.sendMessage("Auf das Lager schauen oder das verbundene Lager-Handy in die Hand nehmen.");return true;}
+            if(args.length<3){sender.sendMessage("/lager kategorie <Name> <Suchfilter,weitere Filter> oder /lager kategorie <Name> löschen");return true;}
+            String name=args[1],filter=String.join(" ",Arrays.copyOfRange(args,2,args.length));
+            if(name.length()>24||filter.length()>100||name.equalsIgnoreCase("Alle")||filter.startsWith("@")||filter.equals("*")){sender.sendMessage("Name: maximal 24 Zeichen; Filter: maximal 100 Zeichen. Alle ist reserviert.");return true;}
+            if(filter.equalsIgnoreCase("löschen"))store.categories.remove(name);
+            else{if(store.categories.size()>=24&&!store.categories.containsKey(name)){sender.sendMessage("Maximal 24 Kategorien pro Lager.");return true;}store.categories.put(name,filter);}
+            flush(store);if(!store.failed){render(store);openCategory(p,store,0,remote,store.categories.containsKey(name)?name:"Alle");sender.sendMessage("Lagerkategorien gespeichert.");}return true;
+        }
+        if(args.length==1&&(args[0].equalsIgnoreCase("empfänger")||args[0].equalsIgnoreCase("empfaenger")||args[0].equalsIgnoreCase("mülleimer"))){
+            if(!(sender instanceof Player p)||!p.hasPermission("casino.admin")){sender.sendMessage("Nur Admins können die Items per Befehl erhalten. Beide sind craftbar.");return true;}
+            p.getInventory().addItem(devices.item(args[0].equalsIgnoreCase("mülleimer"))).values().forEach(i->p.getWorld().dropItemNaturally(p.getLocation(),i));return true;
+        }
         if (args.length == 1 && args[0].equalsIgnoreCase("sender")) {
             if (!(sender instanceof Player p) || !p.hasPermission("casino.admin")) { sender.sendMessage("Nur Admins im Spiel können Sender erhalten."); return true; }
             p.getInventory().addItem(senders.item()).values().forEach(i -> p.getWorld().dropItemNaturally(p.getLocation(), i));
@@ -859,7 +893,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     }
     @Override public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         return sender.hasPermission("casino.admin") && args.length == 1
-                ? List.of("give", "handy", "sender", "zuordnen").stream().filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT))).toList() : List.of();
+                ? List.of("give", "handy", "sender", "empfaenger", "mülleimer", "kategorie", "zuordnen").stream().filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT))).toList() : List.of();
     }
 
     String senderLink(Player player, ItemStack handset) {
@@ -887,6 +921,22 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         } catch (IllegalArgumentException error) { return "Ungültige Verbindung. Handy neu verbinden."; }
     }
 
+    int export(UUID owner,World world,String link,Material type,int amount,Inventory destination){
+        if(stopping||amount<=0||senderTargetProblem(owner,world,link)!=null)return 0;
+        String[] parts=link.split(";");Store store=load(world.getBlockAt(Integer.parseInt(parts[1]),Integer.parseInt(parts[2]),Integer.parseInt(parts[3])));
+        if(store.failed)throw new IllegalStateException("Lager wegen Speicherfehler gesperrt");
+        for(int index=0;index<450;index++){
+            var entry=store.data.get(index);if(entry==null||entry.item().getType()!=type)continue;
+            ItemStack offered=entry.item().clone();offered.setAmount(Math.min(Math.min(amount,entry.count()),Math.min(64,offered.getMaxStackSize())));
+            Inventory source=Bukkit.createInventory(null,9);source.setItem(0,offered.clone());
+            InventoryMoveItemEvent event=new InventoryMoveItemEvent(source,offered.clone(),destination,true);Bukkit.getPluginManager().callEvent(event);
+            if(event.isCancelled()||!offered.equals(event.getItem()))return 0;
+            var current=store.data.get(index);if(current==null||!current.item().isSimilar(offered)||current.count()<offered.getAmount())return 0;
+            ItemStack[] target=BotInventory.copy(destination.getStorageContents());int moved=BotInventory.insert(target,0,target.length,offered);if(moved==0)continue;
+            VirtualStorage<ItemStack> next=store.data.copy();next.remove(index,moved);
+            if(!commit(store,next))throw new IllegalStateException("Lager konnte nicht gespeichert werden");destination.setStorageContents(target);return moved;
+        }return 0;
+    }
     int receive(UUID owner, World world, String link, ItemStack offered) {
         if (stopping || offered == null || offered.getType().isAir()) return 0;
         String[] parts = link.split(";");

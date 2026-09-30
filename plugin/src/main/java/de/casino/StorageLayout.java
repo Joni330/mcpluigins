@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 final class StorageLayout {
     static final int PAGE_SIZE = 45, PAGES = 10, CAPACITY = PAGE_SIZE * PAGES;
+    static int withdrawal(int available,int maxStack,boolean shift){return Math.min(available,shift?Math.min(64,maxStack):1);}
     static <T> T[] migrate(T[] old) {
         if (old.length != 54 && old.length != CAPACITY)
             throw new IllegalArgumentException("Unbekannte Speichergröße: " + old.length);

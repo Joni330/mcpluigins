@@ -29,7 +29,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     private Elevators elevators;
     private MiningBots miningBots;
     private AdvancedMiningBots advancedMiningBots;
-    private BotAlerts botAlerts;
+    private BotAlerts botAlerts; private MachineOverview machineOverview;
     private HomeData homeData;
     private Backpacks backpacks;
 
@@ -73,11 +73,11 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         Objects.requireNonNull(getCommand("lagerteam")).setExecutor(teamCommand);
         Objects.requireNonNull(getCommand("lagerteam")).setTabCompleter(teamCommand);
         storageTerminals = new StorageTerminals(this, storageTeams);
-        storageTerminals.enable();
+        storageTerminals.enable();machineOverview=new MachineOverview(this,storageTeams);machineOverview.source(miningBots::machineEntries);machineOverview.source(advancedMiningBots::machineEntries);machineOverview.enable();
         backpacks = new Backpacks(this, accounts);
         backpacks.enable();
         mainMenu = new MainMenu(this, accounts, storageTeams, backpacks);
-        mainMenu.enable();
+        mainMenu.enable();mainMenu.machines(machineOverview);
         new Homes(this, homeData, storageTeams).enable();
         Bukkit.getOnlinePlayers().forEach(player -> player.discoverRecipes(List.of(recipeKey, slotRecipeKey)));
         Bukkit.getOnlinePlayers().forEach(this::ensureAccount);
@@ -103,6 +103,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     }
 
     @Override public void onDisable() {
+        if(machineOverview!=null)machineOverview.disable();
         if (advancedMiningBots != null) advancedMiningBots.disable();
         if (miningBots != null) miningBots.disable();
         if (elevators != null) elevators.disable();
