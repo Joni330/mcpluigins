@@ -32,7 +32,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     private BotAlerts botAlerts; private MachineOverview machineOverview;
     private HomeData homeData;
     private Backpacks backpacks;
-    private BarrelChestAccess barrelChests;
+    private ChestAccess chestAccess;
     private ChunkLoaders chunkLoaders;
 
     @Override public void onEnable() {
@@ -64,9 +64,9 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         Objects.requireNonNull(getCommand("payload")).setTabCompleter(this);
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new AnvilImprovements(), this);
-        barrelChests=new BarrelChestAccess(task -> Bukkit.getScheduler().runTask(this, task));
-        getServer().getPluginManager().registerEvents(barrelChests, this);
-        Bukkit.getScheduler().runTaskTimer(this,barrelChests::tick,10L,10L);
+        chestAccess=new ChestAccess(task -> Bukkit.getScheduler().runTask(this, task));
+        getServer().getPluginManager().registerEvents(chestAccess, this);
+        Bukkit.getScheduler().runTaskTimer(this,chestAccess::tick,10L,10L);
         chips = new Chips(this);
         getServer().getPluginManager().registerEvents(chips, this);
         registerMachineRecipe();
@@ -111,7 +111,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
 
     @Override public void onDisable() {
         if(chunkLoaders!=null)chunkLoaders.disable();
-        if(barrelChests!=null)barrelChests.disable();
+        if(chestAccess!=null)chestAccess.disable();
         if(machineOverview!=null)machineOverview.disable();
         if (advancedMiningBots != null) advancedMiningBots.disable();
         if (miningBots != null) miningBots.disable();

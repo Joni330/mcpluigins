@@ -5,7 +5,6 @@ import java.util.function.Consumer;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.HumanEntity;
@@ -23,13 +22,13 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 
-/** Opens the actual chest inventory when a barrel is its only lid obstruction. */
-final class BarrelChestAccess implements Listener {
+/** Opens the actual single/double chest inventory regardless of lid obstructions. */
+final class ChestAccess implements Listener {
     private final Consumer<Runnable> nextTick;
     private record Part(Block block,Inventory inventory) {}
     private record Session(Player player,InventoryView view,Block clicked,List<Part> parts) {}
     private final Map<UUID,Session> sessions=new HashMap<>();
-    BarrelChestAccess(Consumer<Runnable> nextTick) { this.nextTick=nextTick; }
+    ChestAccess(Consumer<Runnable> nextTick) { this.nextTick=nextTick; }
 
     @EventHandler(priority=EventPriority.MONITOR)
     public void interact(PlayerInteractEvent event) {
@@ -42,7 +41,7 @@ final class BarrelChestAccess implements Listener {
         // Vanilla consumes the blocked-chest interaction itself; no cancellation is needed.
         nextTick.accept(()->{
             if(event.useInteractedBlock()==Event.Result.DENY||!player.isOnline()
-                    ||player.getGameMode()==GameMode.SPECTATOR||placingWhileSneaking(player)
+                    ||player.isDead()||player.getGameMode()==GameMode.SPECTATOR||placingWhileSneaking(player)
                     ||player.getOpenInventory()!=previous||player.getWorld()!=clicked.getWorld()
                     ||player.getLocation().distanceSquared(clicked.getLocation().add(.5,.5,.5))>64)return;
             Inventory target=inventory(clicked);
@@ -100,14 +99,13 @@ final class BarrelChestAccess implements Listener {
                 ||!(block.getState() instanceof Chest chest))return null;
         Inventory inventory=chest.getInventory();List<Chest> halves=halves(chest,inventory);
         if(halves.isEmpty())return null;
-        boolean barrel=false;
         for(Chest half:halves){
             Block part=half.getBlock();
             if(!part.getWorld().isChunkLoaded(part.getX()>>4,part.getZ()>>4))return null;
-            if(part.getRelative(BlockFace.UP).getType()==Material.BARREL)barrel=true;
-            else if(half.isBlocked())return null;
         }
-        return barrel?inventory:null;
+        // isBlocked() includes the OTHER half of a double chest, even when this lid
+        // is clear. Neither the cover material nor that combined check belongs here.
+        return inventory;
     }
     private static List<Chest> halves(Chest chest,Inventory inventory){
         if(inventory instanceof DoubleChestInventory pair){

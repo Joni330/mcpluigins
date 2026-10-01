@@ -60,13 +60,13 @@ Besitzer, Position und Aktivzustand stehen in `plugins/Casino/chunk-loaders.yml`
 
 Automatisiert geprüft: Speichern/Neustart, An/Aus, Abbau aus dem Index, fehlgeschlagene Speicherung ohne Änderung am bisherigen Stand, negativer Chunkrand, Überschneidungen, getrennte Welten und ausstehende/abgebrochene Platzierungen im Ticketbedarf. Ingame noch prüfen: Rezept, Menü/Teamrechte, Platzier-/Abbauschutz anderer Plugins, Drop, Weiterlaufen von Ofen/Trichter ohne Spieler, mehrere Loader, Neustart sowie Weltentladen/-neuladen.
 
-## Kisten unter Fässern
+## Kisten unter beliebigen Blöcken
 
-Normale Kisten und Redstone-Kisten lassen sich per Rechtsklick auch öffnen, wenn direkt darüber ein Fass steht. Das gilt ebenso für Doppelkisten und für Lagerterminals oder Mülleimer, die als Fass platziert sind. Bei Doppelkisten werden beide Hälften geprüft und das vollständige echte Inventar geöffnet. Andere Hindernisse über der zweiten Hälfte werden weiterhin berücksichtigt.
+Normale Kisten und Redstone-Kisten lassen sich per Rechtsklick unabhängig vom Block darüber öffnen: auch unter Stein, Erde, Fässern, Lagerterminals oder Mülleimern. Das gilt für Einzelkisten und für beide Seiten einer Doppelkiste, auch wenn beide Hälften überbaut sind. Es wird immer das echte Inventar mit 27 bzw. 54 Plätzen geöffnet; die Blöcke darüber bleiben unverändert. Die alte Fass-Sonderprüfung entfällt: Papers `Chest.isBlocked()` prüft bei Doppelkisten auch die andere Hälfte und konnte dadurch die freie Hälfte fälschlich für diese Ausnahme sperren.
 
 Schleichen mit einem Item in einer Hand bleibt zum Anbauen von Trichtern/Blöcken nutzbar. Abgebrochene Interaktionen und Inventaröffnungen durch Schutzplugins werden respektiert; die normalen Kistenschlösser bleiben über den ursprünglichen Inventaranbieter wirksam. Beim Weggehen oder Entfernen einer Kistenhälfte wird das Fenster geschlossen; Klicks auf ein inzwischen ungültiges Kisteninventar werden sofort gesperrt.
 
-Automatisiert geprüft: Einzel-/Doppelkisten, ein oder zwei Fässer darüber, andere Hindernisse, nachträglich gesperrte Interaktion, fremdes geöffnetes Menü, Offhand, Schleichen, Spectator, ungeladener Chunk, Weggehen und Abbau bei offenem Fenster. Ingame noch prüfen: Kistenanimation, Redstone-Kiste, Hopper-Anbau, Vanilla-Schloss, aktive Schutzplugins und gleichzeitiger Zugriff mehrerer Spieler.
+Automatisiert geprüft: Einzel-/Doppelkisten und Redstone-Kisten unter verschiedenen Blöcken, Zugriff von beiden Seiten bei einem Fass nur über einer Hälfte (mit Papers kombinierter Blockade), unveränderte Abdeckung, nachträglich gesperrte Interaktion/Inventaröffnung, fremdes geöffnetes Menü, Offhand, Schleichen, Spectator, ungeladene Hälfte, Weggehen und Abbau der anderen Hälfte bei offenem Fenster. Ingame noch prüfen: Kistenanimation, Hopper-Anbau, Vanilla-Schloss, aktive Schutzplugins und gleichzeitiger Zugriff mehrerer Spieler.
 
 ## Kategorien
 
