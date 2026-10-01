@@ -16,6 +16,7 @@ final class MainMenu implements Listener {
     private final Accounts accounts;
     private final StorageTeams teams;
     private final Backpacks backpacks; private MachineOverview machines;
+    private final StorageTerminals storage;
     void machines(MachineOverview value){machines=value;value.back(p->open(p,"Hauptmenü",0));}
     private static final class Page implements InventoryHolder {
         final UUID owner;
@@ -24,15 +25,17 @@ final class MainMenu implements Listener {
         final Inventory inventory;
         int upgradeRows;
         long upgradePrice;
+        StorageTerminals.UpgradeTarget storageTarget;
         Page(Player player, String section, int offset) {
             owner = player.getUniqueId(); this.section = section; this.offset = offset;
             inventory = Bukkit.createInventory(this, 54, Component.text("Menü · " + section));
         }
         @Override public Inventory getInventory() { return inventory; }
     }
-    MainMenu(JavaPlugin plugin, Accounts accounts, StorageTeams teams, Backpacks backpacks) {
+    MainMenu(JavaPlugin plugin, Accounts accounts, StorageTeams teams, Backpacks backpacks, StorageTerminals storage) {
         this.plugin = plugin; this.accounts = accounts; this.teams = teams;
         this.backpacks = backpacks;
+        this.storage = storage;
     }
     void enable() {
         Bukkit.getPluginManager().registerEvents(this, plugin);
@@ -65,6 +68,22 @@ final class MainMenu implements Listener {
                 icon(page, 24, Material.BARREL, "Lager & Farmen", "Lager-Handy, Sender und Filter");
                 icon(page, 32, Material.BOOK, "Hilfe", "Die wichtigsten Befehle");
                 icon(page, 30, Material.CHEST, "Rucksack Upgrades", "Mehr Platz für deinen persönlichen Rucksack", "Öffnen mit /bp");
+                icon(page, 31, Material.BARREL, "Lager erweitern", "+45 Lagerplätze pro Seite · 200 €", "Auf dein Terminal schauen oder Lager-Handy halten.");
+            }
+            case "Lager erweitern" -> {
+                try{
+                    icon(page,20,Material.GOLD_INGOT,"Hauptkonto: "+Money.format(accounts.balance(player)));
+                    page.storageTarget=storage.upgradeTarget(player);
+                    if(page.storageTarget==null){
+                        icon(page,22,Material.COMPASS,"Lager auswählen","Auf das gewünschte Lagerterminal schauen","oder das verbundene Lager-Handy halten.","Dann unten die Anzeige aktualisieren.");
+                    }else{
+                        var target=page.storageTarget;
+                        icon(page,24,Material.BARREL,"Ausgewähltes Lager öffnen",target.coordinates(),target.pages()+" Seiten · "+StorageLayout.capacity(target.pages())+" Plätze","Die Erweiterung gilt für dieses gemeinsame Lager.");
+                        icon(page,22,Material.LIME_STAINED_GLASS_PANE,"Eine Seite kaufen · "+Money.format(StorageLayout.PAGE_PRICE),
+                                target.pages()+" → "+(target.pages()+1)+" Seiten","+45 Plätze · bis zu 1.024 Items pro Platz","Jede weitere Seite kostet ebenfalls 200 €.","Linksklick: vom Hauptkonto bezahlen");
+                    }
+                    icon(page,49,Material.SUNFLOWER,"Anzeige aktualisieren / Lager auswählen");
+                }catch(IOException|IllegalArgumentException|IllegalStateException error){player.sendMessage("Lager-Erweiterungen konnten nicht geladen werden.");return;}
             }
             case "Rucksack Upgrades" -> {
                 try {
@@ -134,14 +153,15 @@ final class MainMenu implements Listener {
                 }
             }
             case "Lager & Farmen" -> {
+                icon(page,15,Material.GOLD_BLOCK,"Lager erweitern","Klicken: eine zusätzliche Seite kaufen","+45 Plätze · immer 200 € pro Seite");
                 icon(page,13,Material.IRON_AXE,"Holzfällerbot","Klicken: Rezept und Bedienung");
                 icon(page, 40, Material.DAYLIGHT_DETECTOR, "Aufzug", "Klicken: Rezept und Bedienung ansehen");
                 icon(page,38,Material.HOPPER,"Hopper MK2 / MK3 / MK4","5 Eisen- / Gold- / Diamantblöcke in Trichterform.","Normaler Trichter in die Mitte.","Bis zu 4× / 8× / 16× schneller; Redstone stoppt.");
                 icon(page,42,Material.FURNACE,"Ofen MK2 / MK3 / MK4","Normaler Ofen, umgeben von 8 Blöcken.","Eisen: 4× · Gold: 8× · Diamant: 16×.");
                 icon(page,29,Material.BARREL,"Mülleimer","Craften: Eisen oben, links und rechts vom Fass; Lavaeimer darunter.","Trichter anschließen: Items werden dauerhaft gelöscht.");
                 icon(page,31,Material.DISPENSER,"Lager-Empfänger","Rezept wie Sender, aber Werfer in der Mitte.","Mit Lager-Handy schleichend rechtsklicken: verbinden.","Rechtsklick: Itemauswahl und Zielmenge.","Kiste daneben: bis zu 16 Items alle 5 Sekunden.");
-                icon(page,33,Material.CHEST,"Lagerkategorien","Im Lager: Kiste unten wechselt Kategorie.","Klick: 1 Item · Shift-Klick: bis zu 64.","/lager kategorie Holz holz", "Dabei aufs Lager schauen oder Handy halten.");
-                icon(page, 20, Material.BARREL, "Lagerterminal", "Rechtsklick am Terminal öffnet dein Lager.", "450 Plätze · bis zu 1.024 Items pro Platz");
+                icon(page,33,Material.CHEST,"Lagerkategorien","Rüstungen, Erze, Holz und Baublöcke","Werkzeuge, Waffen, Nahrung und Pflanzen","Redstone und Mob-Drops","Kiste unten: Kategorie wechseln · Rechtsklick: eigene Filter","Klick: 1 Item · Shift-Klick: bis zu 64.");
+                icon(page, 20, Material.BARREL, "Lagerterminal", "Rechtsklick am Terminal öffnet dein Lager.", "Start: 10 Seiten · 450 Plätze", "Erweiterbar · bis zu 1.024 Items pro Platz");
                 icon(page, 22, Material.COMPASS, "Lager-Handy", "Schleichen + Rechtsklick am Terminal: verbinden", "Rechtsklick mit deinem Handy: Fernzugriff");
                 icon(page, 24, Material.DROPPER, "Lager-Sender", "Mit verbundenem Handy schleichend rechtsklicken.", "Leere Hand + Schleichen: Filtermenü", "Überlaufkiste vor die Ausgabeseite stellen.");
             }
@@ -191,7 +211,7 @@ final class MainMenu implements Listener {
             if (slot == 53) { p.closeInventory(); return; }
             if (slot == 45 && !page.section.equals("Hauptmenü")) { open(p, (page.section.equals("Aufzug")||page.section.equals("Holzfällerbot")) ? "Lager & Farmen" : page.section.equals("Kontoverlauf") ? "Konto" : "Hauptmenü", 0); return; }
             switch (page.section) {
-                case "Lager & Farmen" -> { if (slot == 40) open(p, "Aufzug", 0);else if(slot==13)open(p,"Holzfällerbot",0); }
+                case "Lager & Farmen" -> { if (slot == 40) open(p, "Aufzug", 0);else if(slot==13)open(p,"Holzfällerbot",0);else if(slot==15)open(p,"Lager erweitern",0); }
                 case "Hauptmenü" -> {
                     if(slot==40&&machines!=null)machines.open(p);
                     else if (slot == 20) open(p, "Konto", 0);
@@ -199,6 +219,20 @@ final class MainMenu implements Listener {
                     else if (slot == 24) open(p, "Lager & Farmen", 0);
                     else if (slot == 32) open(p, "Hilfe", 0);
                     else if (slot == 30) open(p, "Rucksack Upgrades", 0);
+                    else if (slot == 31) open(p, "Lager erweitern", 0);
+                }
+                case "Lager erweitern" -> {
+                    if(slot==49){open(p,"Lager erweitern",0);return;}
+                    if(page.storageTarget==null)return;
+                    try{
+                        if(slot==24)storage.openUpgradeTarget(p,page.storageTarget);
+                        else if(slot==22){
+                            int pages=storage.upgrade(p,page.storageTarget);
+                            p.sendMessage("Lager erweitert: "+pages+" Seiten · "+StorageLayout.capacity(pages)+" Plätze. 200 € vom Hauptkonto bezahlt.");
+                            p.playSound(p.getLocation(),Sound.ENTITY_PLAYER_LEVELUP,.6f,1.2f);open(p,"Lager erweitern",0);
+                        }
+                    }catch(IllegalArgumentException|IllegalStateException error){p.sendMessage(error.getMessage());open(p,"Lager erweitern",0);}
+                    catch(IOException error){p.sendMessage("Speichern fehlgeschlagen. Kein Upgrade gekauft und kein Geld abgebucht.");}
                 }
                 case "Rucksack Upgrades" -> {
                     if (slot == 24) backpacks.open(p);

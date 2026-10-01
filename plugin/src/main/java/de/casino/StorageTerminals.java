@@ -21,10 +21,12 @@ import java.util.Comparator;
 final class StorageTerminals implements Listener, CommandExecutor, TabCompleter {
     private final JavaPlugin plugin;
     private final StorageTeams teams;
+    private final Accounts accounts;
     private final NamespacedKey storageOwner;
     private final NamespacedKey marker, contents, recipe, identity, phoneKey, phoneRecipe, ownerKey, linkKey;
     private final Map<Location, Store> opened = new HashMap<>();
     private final NamespacedKey virtualItems, virtualCounts, legacyBackup;
+    private final NamespacedKey pageCountKey, categoriesKey, categoryVersion;
     private final Map<UUID, UUID> remoteUsers = new HashMap<>();
     private boolean stopping;
     private StorageSenders senders; private StorageDevices devices; private HopperMk2 hopperMk2;
@@ -37,21 +39,22 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     private static final class Store {
         final Location location;
         final UUID id;
-        final List<Page> pages = new ArrayList<>(); final Map<String,String> categories=StorageCategories.defaults(); final List<Page> categoryPages=new ArrayList<>();
+        final Map<Integer,Page> pages = new LinkedHashMap<>(); final Map<String,String> categories=StorageCategories.defaults(); final List<Page> categoryPages=new ArrayList<>();
         final List<Craft> crafts = new ArrayList<>();
-        VirtualStorage<ItemStack> data = new VirtualStorage<>(450);
+        VirtualStorage<ItemStack> data;
         boolean failed;
-        Store(Location location, UUID id) {
+        Store(Location location, UUID id, int size) {
             this.location = location;
             this.id = id;
-            for (int i = 0; i < 10; i++) pages.add(new Page(this, i));
+            data = new VirtualStorage<>(size);
         }
+        int pageCount() { return StorageLayout.pages(data.size()); }
         List<org.bukkit.entity.HumanEntity> viewers() {
-            return java.util.stream.Stream.concat(java.util.stream.Stream.concat(pages.stream(),categoryPages.stream()).map(p -> p.inventory),
+            return java.util.stream.Stream.concat(java.util.stream.Stream.concat(pages.values().stream(),categoryPages.stream()).map(p -> p.inventory),
                     crafts.stream().map(c -> c.inventory)).flatMap(i -> i.getViewers().stream()).distinct().toList();
         }
         ItemStack[] items() {
-            ItemStack[] items = new ItemStack[450];
+            ItemStack[] items = new ItemStack[data.size()];
             for (int i = 0; i < items.length; i++) items[i] = data.get(i) == null ? null : data.get(i).item();
             return items;
         }
@@ -59,11 +62,12 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     private static final class Page implements InventoryHolder {
         final Store store;
         final int index; final String category; final int[] indices=new int[45];
+        int totalPages;
         final Inventory inventory;
         Page(Store store, int index) { this(store,index,"Alle"); }
         Page(Store store,int index,String category) {
             this.store = store; this.index = index; this.category=category; Arrays.fill(indices,-1);
-            inventory = Bukkit.createInventory(this, 54, Component.text(category+" · Seite " + (index + 1) + "/10"));
+            inventory = Bukkit.createInventory(this, 54, Component.text(category+" · Seite " + (index + 1)));
             for (int i = 45; i < 54; i++) control(i, Material.GRAY_STAINED_GLASS_PANE, " ");
             control(46, Material.COMPASS, "Suchen · Namen im Chat eingeben");
             control(47, Material.HOPPER, "Sortieren · Links: Itemtyp / Rechts: Stapelgröße");
@@ -71,8 +75,6 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             control(50,Material.CHEST,"Kategorie: "+category+" · Links: wechseln / Rechts: eigene anlegen");
             control(51, Material.SPYGLASS, "Nächster Suchtreffer");
             if (index > 0) control(45, Material.ARROW, "Vorherige Seite");
-            control(49, Material.PAPER, "Seite " + (index + 1) + "/10 · 450 Lagerplätze");
-            if (index < 9) control(53, Material.ARROW, "Nächste Seite");
         }
         private void control(int slot, Material material, String name) {
             ItemStack icon = ExchangeMenu.icon(material, name);
@@ -102,7 +104,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     private void showCraft(Player player, Craft craft) {
         if (!canUse(player, craft.store, craft.remote)) { player.closeInventory(); return; }
         craft.inventory = Bukkit.createInventory(craft, 54, Component.text(craft.selecting < 0
-                ? "Lager · Werkbank" : "Zutat wählen · Seite " + (craft.page + 1) + "/10"));
+                ? "Lager · Werkbank" : "Zutat wählen · Seite " + (craft.page + 1) + "/" + craft.store.pageCount()));
         Inventory inventory = craft.inventory;
         craft.choices.clear();
         for (int i = 0; i < 54; i++) inventory.setItem(i, ExchangeMenu.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
@@ -146,7 +148,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             }
             if (craft.page > 0) inventory.setItem(45, ExchangeMenu.icon(Material.ARROW, "Vorherige Seite"));
             inventory.setItem(49, ExchangeMenu.icon(Material.BARRIER, "Zurück zur Werkbank"));
-            if (craft.page < 9) inventory.setItem(53, ExchangeMenu.icon(Material.ARROW, "Nächste Seite"));
+            if (craft.page + 1 < craft.store.pageCount()) inventory.setItem(53, ExchangeMenu.icon(Material.ARROW, "Nächste Seite"));
         } else {
             for (int i = 0; i < 9; i++) inventory.setItem(CRAFT_SLOTS[i], craft.matrix[i] == null
                     ? ExchangeMenu.icon(Material.WHITE_STAINED_GLASS_PANE, "Zutat wählen · Rechtsklick: leeren") : craft.matrix[i].clone());
@@ -210,7 +212,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
                     craft.matrix[craft.selecting] = craft.choices.get(slot).clone();
                     craft.selecting = -1;
                 } else if (slot == 45 && craft.page > 0) craft.page--;
-                else if (slot == 53 && craft.page < 9) craft.page++;
+                else if (slot == 53 && craft.page + 1 < craft.store.pageCount()) craft.page++;
                 else if (slot == 49) craft.selecting = -1;
                 else return;
             } else {
@@ -290,12 +292,16 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
 
         return new CraftPlan(next, destination);
     }
-    StorageTerminals(JavaPlugin plugin, StorageTeams teams) {
+    StorageTerminals(JavaPlugin plugin, StorageTeams teams, Accounts accounts) {
         this.plugin = plugin;
         this.teams = teams;
+        this.accounts = accounts;
         virtualItems = new NamespacedKey(plugin, "storage_virtual_items");
         virtualCounts = new NamespacedKey(plugin, "storage_virtual_counts");
         legacyBackup = new NamespacedKey(plugin, "storage_legacy_backup");
+        pageCountKey = new NamespacedKey(plugin, "storage_pages");
+        categoriesKey = new NamespacedKey(plugin, "storage_categories");
+        categoryVersion = new NamespacedKey(plugin, "storage_categories_version");
         storageOwner = new NamespacedKey(plugin, "storage_owner");
         marker = new NamespacedKey(plugin, "storage_terminal");
         contents = new NamespacedKey(plugin, "storage_contents");
@@ -336,11 +342,13 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             }
         }, 20, 20);
     }
-    ItemStack item() {
+    ItemStack item() { return item(StorageLayout.PAGES); }
+    private ItemStack item(int pages) {
         ItemStack item = ExchangeMenu.icon(Material.BARREL, "Lagerterminal");
         var meta = item.getItemMeta();
-        meta.lore(List.of(Component.text("450 gemeinsame Lagerplätze · 10 Seiten"), Component.text("Platzieren und rechtsklicken zum Öffnen.")));
+        meta.lore(List.of(Component.text(StorageLayout.capacity(pages)+" gemeinsame Lagerplätze · "+pages+" Seiten"), Component.text("/menu → Lager erweitern · 200 € pro Seite"), Component.text("Platzieren und rechtsklicken zum Öffnen.")));
         meta.getPersistentDataContainer().set(marker, PersistentDataType.BYTE, (byte) 1);
+        meta.getPersistentDataContainer().set(pageCountKey, PersistentDataType.INTEGER, pages);
         item.setItemMeta(meta); return item;
     }
     private ItemStack phone() {
@@ -404,12 +412,15 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         if (bytes == null) throw new IllegalStateException("Speicherdaten fehlen; Terminal wird nicht geleert.");
         ItemStack[] items = ItemStack.deserializeItemsFromBytes(bytes);
         int[] counts = virtual ? pdc.get(virtualCounts, PersistentDataType.INTEGER_ARRAY) : null;
-        if (virtual && (items.length != 450 || counts == null || counts.length != 450)) throw new IllegalStateException("Ungültige virtuelle Lagerdaten.");
+        if (virtual && (counts == null || counts.length != items.length)) throw new IllegalStateException("Ungültige virtuelle Lagerdaten.");
+        if (virtual) StorageLayout.pages(items.length);
         items = StorageLayout.migrate(items);
         String storedId = pdc.get(identity, PersistentDataType.STRING);
         UUID id = storedId == null ? UUID.randomUUID() : UUID.fromString(storedId);
-        Store store = new Store(block.getLocation(), id);
-        String categoryData=pdc.get(new NamespacedKey(plugin,"storage_categories"),PersistentDataType.STRING); if(categoryData!=null){var yaml=new org.bukkit.configuration.file.YamlConfiguration();try{yaml.loadFromString(categoryData);store.categories.clear();store.categories.put("Alle","*");for(var row:yaml.getMapList("categories")){String name=String.valueOf(row.get("name")),filter=String.valueOf(row.get("filter"));if(!name.equals("Alle"))store.categories.put(name,filter);}}catch(Exception ex){throw new IllegalStateException("Ungültige Kategorien",ex);}}
+        Store store = new Store(block.getLocation(), id, StorageLayout.capacity(accounts.storagePages(id,StorageLayout.pages(items.length))));
+        String categoryData=pdc.get(categoriesKey,PersistentDataType.STRING); if(categoryData!=null){var yaml=new org.bukkit.configuration.file.YamlConfiguration();try{yaml.loadFromString(categoryData);store.categories.clear();store.categories.put("Alle","*");for(var row:yaml.getMapList("categories")){String name=String.valueOf(row.get("name")),filter=String.valueOf(row.get("filter"));if(!name.equals("Alle"))store.categories.put(name,filter);}}catch(Exception ex){throw new IllegalStateException("Ungültige Kategorien",ex);}}
+        boolean migrateCategories=pdc.getOrDefault(categoryVersion,PersistentDataType.INTEGER,0)<1;
+        if(migrateCategories)StorageCategories.addMissingDefaults(store.categories);
         for (int i = 0; i < items.length; i++) {
             boolean empty = items[i] == null || items[i].getType().isAir();
             if (virtual && (empty != (counts[i] == 0))) throw new IllegalStateException("Lagermenge passt nicht zum Item.");
@@ -422,7 +433,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             }
         }
         // Save samples and quantities together. The old payload is retained once as a backup.
-        if (!virtual || storedId == null) save(store);
+        if (!virtual || storedId == null || migrateCategories) save(store);
         render(store);
         opened.put(store.location, store); return store;
     }
@@ -432,11 +443,12 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         String currentId = barrel.getPersistentDataContainer().get(identity, PersistentDataType.STRING);
         if (currentId != null && !store.id.toString().equals(currentId)) throw new IllegalStateException("Das Lagerterminal wurde ersetzt.");
         var pdc = barrel.getPersistentDataContainer();
-        var categoryYaml=new org.bukkit.configuration.file.YamlConfiguration();categoryYaml.set("categories",store.categories.entrySet().stream().map(e->Map.of("name",e.getKey(),"filter",e.getValue())).toList());pdc.set(new NamespacedKey(plugin,"storage_categories"),PersistentDataType.STRING,categoryYaml.saveToString());
+        var categoryYaml=new org.bukkit.configuration.file.YamlConfiguration();categoryYaml.set("categories",store.categories.entrySet().stream().map(e->Map.of("name",e.getKey(),"filter",e.getValue())).toList());pdc.set(categoriesKey,PersistentDataType.STRING,categoryYaml.saveToString());
+        pdc.set(categoryVersion,PersistentDataType.INTEGER,1);
         byte[] old = pdc.get(contents, PersistentDataType.BYTE_ARRAY);
         if (old != null && !pdc.has(legacyBackup, PersistentDataType.BYTE_ARRAY)) pdc.set(legacyBackup, PersistentDataType.BYTE_ARRAY, old);
-        int[] counts = new int[450];
-        for (int i = 0; i < 450; i++) counts[i] = store.data.get(i) == null ? 0 : store.data.get(i).count();
+        int[] counts = new int[store.data.size()];
+        for (int i = 0; i < counts.length; i++) counts[i] = store.data.get(i) == null ? 0 : store.data.get(i).count();
         pdc.set(virtualItems, PersistentDataType.BYTE_ARRAY, ItemStack.serializeItemsAsBytes(store.items()));
         pdc.set(virtualCounts, PersistentDataType.INTEGER_ARRAY, counts);
         pdc.remove(contents); // Old plugin versions must not restore stale contents.
@@ -466,17 +478,24 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         return true;
     }
     private void render(Store store) {
-        for(Page page:java.util.stream.Stream.concat(store.pages.stream(),store.categoryPages.stream()).toList())renderPage(page);
+        for(Page page:java.util.stream.Stream.concat(store.pages.values().stream(),store.categoryPages.stream()).toList())renderPage(page);
     }
     private void renderPage(Page page){
         List<Integer> matches=new ArrayList<>();String filter=page.store.categories.getOrDefault(page.category,"*");
-        for(int i=0;i<450;i++){
+        for(int i=0;i<page.store.data.size();i++){
             var entry=page.store.data.get(i);
             if(page.category.equals("Alle")){matches.add(i);continue;}
             if(entry==null)continue;ItemStack item=entry.item();
             String name=item.hasItemMeta()&&item.getItemMeta().hasDisplayName()?net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(item.getItemMeta().displayName()):"";
             if(StorageCategories.matches(item.getType().name(),item.getType().isBlock(),name,filter))matches.add(i);
         }
+        page.totalPages=Math.max(page.index+1,Math.max(1,(matches.size()+44)/45));
+        page.control(49,Material.PAPER,"Seite "+(page.index+1)+"/"+page.totalPages+" · "+page.store.data.size()+" Lagerplätze");
+        page.control(53,page.index+1<page.totalPages?Material.ARROW:Material.GRAY_STAINED_GLASS_PANE,page.index+1<page.totalPages?"Nächste Seite":" ");
+        String title=page.category+" · Seite "+(page.index+1)+"/"+page.totalPages;
+        for(var viewer:page.inventory.getViewers())if(!viewer.getOpenInventory().getTitle().equals(title))Bukkit.getScheduler().runTask(plugin,()->{
+            if(viewer.getOpenInventory().getTopInventory()==page.inventory)viewer.getOpenInventory().setTitle(page.category+" · Seite "+(page.index+1)+"/"+page.totalPages);
+        });
         for(int slot=0;slot<45;slot++){
             int offset=page.index*45+slot,index=offset<matches.size()?matches.get(offset):-1;page.indices[slot]=index;
             var entry=index<0?null:page.store.data.get(index);ItemStack icon=null;
@@ -491,7 +510,9 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         if (meta == null || !meta.getPersistentDataContainer().has(marker, PersistentDataType.BYTE)) return;
         if (!(event.getBlockPlaced().getState() instanceof Barrel barrel)) { event.setCancelled(true); return; }
         barrel.getPersistentDataContainer().set(marker, PersistentDataType.BYTE, (byte) 1);
-        barrel.getPersistentDataContainer().set(contents, PersistentDataType.BYTE_ARRAY, ItemStack.serializeItemsAsBytes(new ItemStack[450]));
+        int pages=meta.getPersistentDataContainer().getOrDefault(pageCountKey,PersistentDataType.INTEGER,StorageLayout.PAGES);
+        try { barrel.getPersistentDataContainer().set(contents, PersistentDataType.BYTE_ARRAY, ItemStack.serializeItemsAsBytes(new ItemStack[StorageLayout.capacity(pages)])); }
+        catch(IllegalArgumentException|ArithmeticException ex){event.setCancelled(true);return;}
         barrel.getPersistentDataContainer().set(identity, PersistentDataType.STRING, UUID.randomUUID().toString());
         barrel.getPersistentDataContainer().set(storageOwner, PersistentDataType.STRING, event.getPlayer().getUniqueId().toString());
         barrel.customName(Component.text("Lagerterminal"));
@@ -524,10 +545,55 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         }
     }
     private void open(Player player, Store store, int page, boolean remote) {openCategory(player,store,page,remote,"Alle");}
+    record UpgradeTarget(UUID id,UUID world,int x,int y,int z,int pages,boolean remote) {
+        String coordinates(){return x+", "+y+", "+z;}
+    }
+    UpgradeTarget upgradeTarget(Player player) {
+        Store store=null;boolean remote=false;
+        if(player.getOpenInventory().getTopInventory().getHolder() instanceof Page page){
+            store=page.store;remote=store.id.equals(remoteUsers.get(player.getUniqueId()));
+        }else{
+            Block target=player.getTargetBlockExact(8);
+            if(terminal(target)&&allowed(player,target))store=load(target);
+            else{
+                String link=senderLink(player,player.getInventory().getItemInMainHand());
+                if(link!=null&&senderTargetProblem(player.getUniqueId(),player.getWorld(),link)==null){
+                    String[] parts=link.split(";");
+                    store=load(player.getWorld().getBlockAt(Integer.parseInt(parts[1]),Integer.parseInt(parts[2]),Integer.parseInt(parts[3])));remote=true;
+                }
+            }
+        }
+        if(store==null||!canUse(player,store,remote))return null;
+        return new UpgradeTarget(store.id,store.location.getWorld().getUID(),store.location.getBlockX(),store.location.getBlockY(),store.location.getBlockZ(),store.pageCount(),remote);
+    }
+    private Store upgradeStore(Player player,UpgradeTarget target){
+        World world=Bukkit.getWorld(target.world());
+        if(world==null||player.getWorld()!=world)throw new IllegalArgumentException("Das ausgewählte Lager ist nicht mehr zugänglich.");
+        Block block=world.getBlockAt(target.x(),target.y(),target.z());
+        if(!terminal(block)||!allowed(player,block))throw new IllegalArgumentException("Du hast keinen Zugriff mehr auf das ausgewählte Lager.");
+        Store store=load(block);
+        if(!store.id.equals(target.id())||!canUse(player,store,target.remote()))throw new IllegalArgumentException("Das ausgewählte Lager ist nicht mehr zugänglich. Bitte erneut auswählen.");
+        return store;
+    }
+    int upgrade(Player player,UpgradeTarget target)throws java.io.IOException {
+        Store store=upgradeStore(player,target);
+        if(store.pageCount()!=target.pages())throw new IllegalArgumentException("Das Lager wurde bereits erweitert. Bitte die Anzeige aktualisieren.");
+        VirtualStorage<ItemStack> expanded=store.data.expanded(StorageLayout.capacity(Math.addExact(target.pages(),1)));
+        accounts.balance(player);
+        accounts.upgradeStorage(player.getUniqueId(),store.id,store.pageCount(),target.pages());
+        // Empty new slots need no separate world transaction: load() restores their paid
+        // capacity from Accounts. Subsequent item changes save the full expanded payload.
+        store.data=expanded;render(store);return store.pageCount();
+    }
+    void openUpgradeTarget(Player player,UpgradeTarget target){
+        open(player,upgradeStore(player,target),0,target.remote());
+    }
     private void openCategory(Player player,Store store,int page,boolean remote,String category){
         PluginChunks.acquire(plugin, this, new PluginChunks.Key(store.location.getWorld().getUID(), store.location.getBlockX() >> 4, store.location.getBlockZ() >> 4));
-        Page view;if(category.equals("Alle"))view=store.pages.get(page);else{view=new Page(store,page,category);store.categoryPages.add(view);}renderPage(view);Inventory target=view.inventory;
+        page=Math.clamp(page,0,store.pageCount()-1);
+        Page view;if(category.equals("Alle"))view=store.pages.computeIfAbsent(page,i->new Page(store,i));else{view=new Page(store,page,category);store.categoryPages.add(view);}renderPage(view);Inventory target=view.inventory;
         player.openInventory(target);
+        if(player.getOpenInventory().getTopInventory()==target)player.getOpenInventory().setTitle(category+" · Seite "+(page+1)+"/"+view.totalPages);
         if (player.getOpenInventory().getTopInventory() == target && remote) remoteUsers.put(player.getUniqueId(), store.id);
         else remoteUsers.remove(player.getUniqueId());
         releaseIfIdle(store);
@@ -681,7 +747,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             }
             if (event.getClick() != ClickType.LEFT) return;
             int next = slot == 45 ? page.index - 1 : slot == 53 ? page.index + 1 : -1;
-            if (next < 0 || next >= 10) return;
+            if (next < 0 || next >= page.totalPages) return;
             boolean remote = store.id.equals(remoteUsers.get(p.getUniqueId()));
             Bukkit.getScheduler().runTask(plugin, () -> {
                 if (p.isOnline() && p.getOpenInventory().getTopInventory() == page.inventory && canUse(p, store)) {
@@ -806,7 +872,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             }
             opened.remove(store.location);
             event.getBlock().setType(Material.AIR);
-            event.getBlock().getWorld().dropItemNaturally(store.location.clone().add(.5, .5, .5), item());
+            event.getBlock().getWorld().dropItemNaturally(store.location.clone().add(.5, .5, .5), item(store.pageCount()));
         } catch (RuntimeException error) { event.getPlayer().sendMessage("Lagerdaten konnten nicht geprüft werden. Abbau gesperrt."); }
     }
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -925,7 +991,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         if(stopping||amount<=0||senderTargetProblem(owner,world,link)!=null)return 0;
         String[] parts=link.split(";");Store store=load(world.getBlockAt(Integer.parseInt(parts[1]),Integer.parseInt(parts[2]),Integer.parseInt(parts[3])));
         if(store.failed)throw new IllegalStateException("Lager wegen Speicherfehler gesperrt");
-        for(int index=0;index<450;index++){
+        for(int index=0;index<store.data.size();index++){
             var entry=store.data.get(index);if(entry==null||entry.item().getType()!=type)continue;
             ItemStack offered=entry.item().clone();offered.setAmount(Math.min(Math.min(amount,entry.count()),Math.min(64,offered.getMaxStackSize())));
             Inventory source=Bukkit.createInventory(null,9);source.setItem(0,offered.clone());

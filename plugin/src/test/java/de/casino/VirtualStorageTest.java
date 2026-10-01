@@ -7,6 +7,17 @@ import static org.junit.jupiter.api.Assertions.*;
 class VirtualStorageTest {
     record Item(String type, String metadata) {}
     final Item iron = new Item("iron", "");
+    @Test void expansionPreservesGapsCountsAndMetadataAndAcceptsMoreItems(){
+        VirtualStorage<Item> old=new VirtualStorage<>(450);Item named=new Item("axe","enchanted;damage=7;name=Test");
+        old.set(0,iron,1024);old.set(449,named,3);
+        VirtualStorage<Item> next=old.expanded(StorageLayout.capacity(11));
+        assertEquals(450,old.size());assertEquals(495,next.size());assertNull(next.get(448));
+        assertEquals(1024,next.get(0).count());assertEquals(named,next.get(449).item());assertEquals(3,next.get(449).count());
+        next.remove(449,1);assertEquals(3,old.get(449).count());
+        for(int i=0;i<450;i++)next.set(i,iron,1024);
+        assertEquals(45*1024,next.insert(iron,46*1024,Objects::equals));
+        assertEquals(1024,next.get(494).count());assertThrows(IllegalArgumentException.class,()->next.expanded(450));
+    }
     @Test void legacyFull450SlotsMigrateWithoutQuantityLoss() {
         VirtualStorage<Item> storage = new VirtualStorage<>(450);
         for (int i = 0; i < 450; i++) assertEquals(64, storage.insert(iron, 64, Objects::equals));

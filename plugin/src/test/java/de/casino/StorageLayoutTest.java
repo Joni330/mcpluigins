@@ -24,8 +24,18 @@ class StorageLayoutTest {
             assertFalse(occupied[page][slot]); occupied[page][slot] = true;
             assertEquals(i, page * 45 + slot);
         }
-        assertThrows(IndexOutOfBoundsException.class, () -> StorageLayout.page(450));
+        assertEquals(10,StorageLayout.page(450));
         assertThrows(IndexOutOfBoundsException.class, () -> StorageLayout.slot(-1));
         assertThrows(IllegalArgumentException.class, () -> StorageLayout.migrate(new String[55]));
+    }
+    @Test void expandedPayloadKeepsLastPageAndRejectsPartialPages(){
+        String[] old=new String[StorageLayout.capacity(13)];old[0]="named tool";old[584]="shulker with items";
+        String[] migrated=StorageLayout.migrate(old);
+        assertArrayEquals(old,migrated);assertNotSame(old,migrated);assertEquals(13,StorageLayout.pages(migrated.length));
+        assertEquals(12,StorageLayout.page(584));assertEquals(44,StorageLayout.slot(584));
+        assertThrows(IllegalArgumentException.class,()->StorageLayout.pages(451));
+        assertThrows(IllegalArgumentException.class,()->StorageLayout.migrate(new String[449]));
+        assertThrows(IllegalArgumentException.class,()->StorageLayout.capacity(9));
+        assertThrows(ArithmeticException.class,()->StorageLayout.capacity(Integer.MAX_VALUE));
     }
 }

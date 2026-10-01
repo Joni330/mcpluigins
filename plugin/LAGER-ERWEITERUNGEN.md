@@ -40,14 +40,28 @@ Admin: `/lager empfaenger`
 
 ## Kategorien
 
-Die Kiste unten im Lager wechselt zwischen Alle, Rüstungen, Erze und Baublöcke sowie eigenen Kategorien. Die Kategorien sind gefilterte Ansichten desselben Lagers, keine getrennten Speicher. Sie gelten auch am Handy und werden am Lagerterminal gespeichert. Ein Item kann in mehreren Ansichten erscheinen, wird aber nur einmal gespeichert.
+Die Kiste unten im Lager wechselt zwischen Alle, Rüstungen, Erze, Holz, Baublöcke, Werkzeuge, Waffen, Nahrung, Pflanzen, Redstone und Mob-Drops sowie eigenen Kategorien. Die Kategorien sind gefilterte Ansichten desselben Lagers, keine getrennten Speicher. Sie gelten auch am Handy und werden am Lagerterminal gespeichert. Ein Item kann in mehreren Ansichten erscheinen, wird aber nur einmal gespeichert. Neue Standardkategorien werden bei bestehenden Lagern einmalig ergänzt; bereits angelegte eigene Filter gleichen Namens bleiben erhalten. Danach gelöschte Kategorien bleiben auch nach einem Neustart gelöscht.
+
+## Lagerseiten kaufen
+
+`/menu` → **Lager erweitern**, außerdem unter **Lager & Farmen** erreichbar. Vor dem Öffnen auf das gewünschte Terminal schauen (bis zu acht Blöcke entfernt) oder das damit verbundene Lager-Handy in der Haupthand halten. Das Menü zeigt die Koordinaten und die aktuelle Größe des ausgewählten Lagers.
+
+Ein Klick auf **Eine Seite kaufen** ergänzt **45 Lagerplätze für 200 € vom Hauptkonto**. Jede weitere Seite kostet ebenfalls 200 €. Die bisherigen zehn Seiten bleiben erhalten; es gibt keine neue kleinere Anfangsstufe. Jede Seite unterstützt weiterhin bis zu 1.024 identische Items je Platz. Die Erweiterung gehört zum Terminal und steht damit auch dessen Teammitgliedern zur Verfügung. Teammitglieder mit Lagerzugriff können ebenfalls aus ihrem eigenen Hauptkonto eine Seite für das gemeinsame Lager bezahlen.
+
+Abbuchung, Kontoverlauf und bezahlte Seitenzahl werden gemeinsam in `accounts.yml` gespeichert. Beim Laden gleicht das Terminal seine Größe mit diesem Kaufstand ab, falls der Weltchunk vor einem Neustart noch die alte Größe gespeichert hatte. Fehlendes Guthaben, ein veraltetes Kaufmenü, verlorener Team-/Handyzugriff oder ein ersetztes Terminal verhindern den Kauf. Bei fehlgeschlagener Kontospeicherung bleiben Guthaben und Seitenzahl unverändert. Leere Terminals behalten beim normalen Abbau und erneuten Platzieren ihre Seitenzahl am gedroppten Item; Handy und Sender müssen wie bisher mit dem neu platzierten Terminal verbunden werden.
+
+Alle Lagerfunktionen verwenden die gekaufte Größe: Seitenwechsel, Kategorien, Suche, Sortierung, Lager-Crafting, Sender und Empfänger. Neue leere Seiten werden erst beim Öffnen als Inventarfenster erzeugt. Normale Welt-/Plugin-Sicherungen sollten wie bisher zusammen erstellt werden.
+
+Automatisiert geprüft: mehrfacher Kauf zu jeweils 200 €, Hauptkonto/Casino-Trennung, gemeinsame Erweiterungen, veraltete Kaufansichten, Speicherfehler ohne Abbuchung, Wiederherstellung aus dem Kaufstand, erweiterte Itemdaten ohne Verlust von Mengen/Metadaten, Crafting mit Zutaten auf gekauften Seiten und neue Kategorien. Ingame noch prüfen: Menübedienung mit Terminal und Handy, verlorener Zugriff, zwei gleichzeitige Betrachter, Suche/Crafting/Sender/Empfänger auf Seite 11+, Abbau/Neuplatzierung und Serverneustart.
+
+## Eigene Kategorien
 
 Eigene Kategorie anlegen/ändern, während man auf das Terminal schaut oder das verbundene Handy hält:
 
-- `/lager kategorie Holz holz`
-- `/lager kategorie Werkzeuge spitzhacke,schaufel,axt`
+- `/lager kategorie Birkenholz birke`
+- `/lager kategorie Garten schaufel,hacke`
 - `/lager kategorie Wertvolles diamant,smaragd,gold`
-- `/lager kategorie Holz löschen`
+- `/lager kategorie Birkenholz löschen`
 
 Namen ohne Leerzeichen, maximal 24 Zeichen. Filter bis 100 Zeichen; Kommas bedeuten alternative Suchbegriffe. Deutsche Suchbegriffe und eigene Itemnamen funktionieren wie die vorhandene Suche. Maximal 24 Kategorien. Alle bleibt immer erreichbar. Teammitglieder dürfen gemeinsame Kategorien bearbeiten. Rechtsklick auf die Kategorie-Kiste zeigt die Befehle.
 

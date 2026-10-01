@@ -95,6 +95,27 @@ final class Accounts {
         try { saveHistory(new Booking(player, "Rucksack auf " + (rows + 1) + " Reihen erweitert", -price, before - price, 0, 0)); }
         catch (IOException error) { data.set(rowsKey, oldRows); data.set(balanceKey, before); throw error; }
     }
+    int storagePages(UUID storage, int savedPages) {
+        StorageLayout.capacity(savedPages);
+        int purchased = data.getInt("storage-upgrades." + storage + ".pages", StorageLayout.PAGES);
+        StorageLayout.capacity(purchased);
+        return Math.max(savedPages, purchased);
+    }
+    void upgradeStorage(UUID player, UUID storage, int savedPages, int expectedPages) throws IOException {
+        int pages = storagePages(storage, savedPages);
+        if (pages != expectedPages) throw new IllegalArgumentException("Das Lager wurde bereits erweitert. Bitte die Anzeige aktualisieren.");
+        StorageLayout.capacity(Math.addExact(pages, 1));
+        String balanceKey = player + ".balance", pagesKey = "storage-upgrades." + storage + ".pages";
+        if (!data.contains(balanceKey)) throw new IllegalArgumentException("Konto nicht gefunden.");
+        long before = data.getLong(balanceKey), price = StorageLayout.PAGE_PRICE;
+        if (before < price) throw new IllegalArgumentException("Nicht genügend Geld auf deinem Hauptkonto. Eine Lagerseite kostet 200 €.");
+        Object oldPages = data.get(pagesKey);
+        // Money and the permanent entitlement share one atomic save. The terminal can recover
+        // its paid capacity from here even if its chunk was not saved before a restart.
+        data.set(pagesKey, pages + 1); data.set(balanceKey, before - price);
+        try { saveHistory(new Booking(player, "Lager auf " + (pages + 1) + " Seiten erweitert", -price, before - price, 0, 0)); }
+        catch (IOException error) { data.set(pagesKey, oldPages); data.set(balanceKey, before); throw error; }
+    }
     void debit(UUID player, long cents) throws IOException { debit(player, cents, "Abbuchung"); }
 
     void debit(java.util.UUID player, long cents, String reason) throws IOException {

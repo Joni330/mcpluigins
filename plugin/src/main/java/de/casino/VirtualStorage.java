@@ -13,6 +13,12 @@ final class VirtualStorage<T> {
     VirtualStorage(int size) { slots = new ArrayList<>(Collections.nCopies(size, null)); }
     private VirtualStorage(List<Entry<T>> slots) { this.slots = new ArrayList<>(slots); }
     VirtualStorage<T> copy() { return new VirtualStorage<>(slots); }
+    VirtualStorage<T> expanded(int size) {
+        if (size < size()) throw new IllegalArgumentException("Lager darf nicht verkleinert werden");
+        VirtualStorage<T> result = copy();
+        result.slots.addAll(Collections.nCopies(size - size(), null));
+        return result;
+    }
     int size() { return slots.size(); }
     Entry<T> get(int slot) { return slots.get(slot); }
     void set(int slot, T item, int count) { slots.set(slot, count == 0 ? null : new Entry<>(item, count)); }

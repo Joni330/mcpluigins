@@ -72,11 +72,11 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         StorageTeamCommand teamCommand = new StorageTeamCommand(storageTeams);
         Objects.requireNonNull(getCommand("lagerteam")).setExecutor(teamCommand);
         Objects.requireNonNull(getCommand("lagerteam")).setTabCompleter(teamCommand);
-        storageTerminals = new StorageTerminals(this, storageTeams);
+        storageTerminals = new StorageTerminals(this, storageTeams, accounts);
         storageTerminals.enable();machineOverview=new MachineOverview(this,storageTeams);machineOverview.source(miningBots::machineEntries);machineOverview.source(advancedMiningBots::machineEntries);machineOverview.enable();
         backpacks = new Backpacks(this, accounts);
         backpacks.enable();
-        mainMenu = new MainMenu(this, accounts, storageTeams, backpacks);
+        mainMenu = new MainMenu(this, accounts, storageTeams, backpacks, storageTerminals);
         mainMenu.enable();mainMenu.machines(machineOverview);
         new Homes(this, homeData, storageTeams).enable();
         Bukkit.getOnlinePlayers().forEach(player -> player.discoverRecipes(List.of(recipeKey, slotRecipeKey)));

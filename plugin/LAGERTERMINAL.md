@@ -19,7 +19,7 @@ Als Admin `/lager sender` oder dieses Rezept (Mitte: Werfer, nicht Spender):
 4. Hopper in den Sender führen; Rechtsklick mit leerer Hand öffnet seinen Puffer.
 
 Neun normale Inventarplätze puffern Items. Alle fünf Sekunden werden insgesamt
-höchstens 16 Items übertragen, über alle 450 Lagerplätze. Passende Stapel werden
+höchstens 16 Items übertragen, über alle Lagerplätze einschließlich gekaufter Seiten. Passende Stapel werden
 zuerst gefüllt, dann leere Plätze. NBT-Daten und normale Item-Stapelgrenzen bleiben
 erhalten. Volles Lager: nur der passende Anteil wird übertragen; der Rest bleibt.
 Keine Gebühren. Filter und optionaler Überlauf sind unten beschrieben.
@@ -51,18 +51,19 @@ Als Admin `/lager give` oder am Werktisch craften:
 | Diamant | Fass | Diamant |
 | Eisenbarren | Redstone | Eisenbarren |
 
-Terminal wie ein Fass platzieren, mit Rechtsklick öffnen. 450 Slots auf zehn Seiten mit je 45 Lagerplätzen und
+Terminal wie ein Fass platzieren, mit Rechtsklick öffnen. Anfangs 450 Slots auf zehn Seiten mit je 45 Lagerplätzen und
 virtuellen Mengen bis 1.024 je Platz. Die Bedienung steht im Abschnitt unten.
+Unter `/menu` → **Lager erweitern** kostet jede zusätzliche Seite mit 45 Plätzen **200 € vom Hauptkonto**.
 Besitzer und Mitglieder seines Lagerteams können dasselbe Terminal gleichzeitig benutzen.
 Jedes Terminal hat einen eigenen Speicher; es gibt noch kein verbundenes Netzwerk.
-Leeren und alle Fenster schließen, dann abbauen: Ein leeres Terminal-Item droppt.
+Leeren und alle Fenster schließen, dann abbauen: Ein leeres Terminal-Item mit der bisherigen Seitenzahl droppt.
 Hopperzugriff, Explosionen und Verschieben durch Kolben sind gesperrt.
 
 ## Speicherung und Grenzen
 
 Die vollständigen Item-NBT-Daten einschließlich Namen, Verzauberungen und Shulkerinhalten
 werden in den Daten des Fassblocks gespeichert. Diese gehören zur Welt, nicht zur
-Casino-Kontodatei. Beim Umzug die ganze Welt bei gestopptem Server sichern/kopieren.
+Casino-Kontodatei. Bezahlte Erweiterungen werden zusätzlich gemeinsam mit der Abbuchung in `accounts.yml` gespeichert. Beim Umzug Welt und Plugin-Daten bei gestopptem Server sichern/kopieren.
 Lageränderungen werden vor der Änderung am Spielerinventar, beim Schließen, Chunk-Entladen und beim
 Deaktivieren des Plugins in den Block geschrieben. Minecraft speichert den Chunk
 bei seinen normalen Speichervorgängen. Sauber mit `stop` beenden; kein `/reload`.
@@ -70,7 +71,7 @@ Harte Abstürze können wie bei normalen Weltinventaren seit dem letzten Speiche
 Änderungen verlieren. Es besteht keine crash-atomare Transaktion mit Spielerdateien.
 Keine Terminals per WorldEdit klonen/entfernen: Andere Plugins/Admin-Eingriffe können
 Blockschutz umgehen und würden gespeicherte Inhalte kopieren bzw. löschen.
-Ohne Casino-Plugin bleibt das Fass sichtbar, aber die 450 virtuellen Slots sind nicht erreichbar.
+Ohne Casino-Plugin bleibt das Fass sichtbar, aber die virtuellen Slots sind nicht erreichbar.
 Kabel, Autocrafting und eigenes Blockmodell sind nicht enthalten.
 
 ## Ingame-Prüfung vor dem produktiven Einsatz
@@ -103,8 +104,8 @@ Der Spieler muss das passende Handy im Inventar behalten. Ein anderer Spieler ka
 es weder benutzen noch neu binden. Terminalersatz am selben Ort macht die alte
 Verbindung ungültig; der Besitzer kann sein Handy mit dem neuen Terminal verbinden.
 
-Pfeile unten links/rechts wechseln die Seite; Shift-Klick zahlt auf die gerade
-geöffnete Seite ein. Die Navigationssymbole sind keine entnehmbaren Items.
+Pfeile unten links/rechts wechseln die Seite; Shift-Klick lagert über alle verfügbaren
+Seiten ein. Die Navigationssymbole sind keine entnehmbaren Items.
 Doppelklick zum Einsammeln und Creative-Klonen sind im Lager gesperrt.
 Bisherige 54 Plätze werden verlustfrei in Slotreihenfolge übernommen: 45 auf Seite 1,
 9 auf Seite 2. Die Teamrechte gelten sowohl vor Ort als auch beim Handy.
@@ -119,7 +120,7 @@ wieder freigegeben. Harte Absturzsicherheit bleibt wie oben beschrieben begrenzt
 
 Unten auf den Kompass klicken und innerhalb von 60 Sekunden den Suchbegriff in den
 Chat schreiben. Diese Nachricht wird nicht öffentlich gesendet. `abbrechen` beendet
-die Eingabe. Gesucht wird über alle zehn Seiten nach englischen Materialnamen,
+die Eingabe. Gesucht wird über alle verfügbaren Seiten nach englischen Materialnamen,
 eigenen Itemnamen und häufigen deutschen Begriffen (z.B. eisen, kupfer, diamant,
 holz). Es ist keine vollständige deutsche Übersetzung aller Minecraft-Items.
 Die passende Lagerseite öffnet sich; Reihe und Spalte stehen im Chat. Das Fernrohr
@@ -192,12 +193,13 @@ Mengenlimits pro Item und automatische Vernichtung sind noch nicht enthalten.
 
 ## Virtuelle Stapel bis 1.024
 
-Alle 450 Plätze speichern je bis zu 1.024 identische Items, unabhängig von ihrer
+Alle Lagerplätze, auch auf gekauften Seiten, speichern je bis zu 1.024 identische Items, unabhängig von ihrer
 normalen Minecraft-Stapelgröße. Die Anzeige ist ein einzelnes Muster; die genaue
 Menge steht beim Darüberfahren in der Beschreibung. Anzeigebeschreibungen werden
 niemals auf die echten Items geschrieben.
 
-- Linksklick mit leerem Cursor: bis zu einen normalen Stack direkt ins Spielerinventar.
+- Linksklick mit leerem Cursor: ein Item direkt ins Spielerinventar.
+- Shift-Linksklick: bis zu einen normalen Stack direkt ins Spielerinventar.
 - Rechtsklick mit leerem Cursor: ein Item direkt ins Spielerinventar.
 - Shift-Klick im Spielerinventar: diesen Stack über alle Lagerseiten einlagern.
 - Mit einem Item am Cursor auf einen Lagerplatz klicken: Cursorinhalt einlagern.
