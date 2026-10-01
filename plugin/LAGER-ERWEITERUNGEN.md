@@ -38,6 +38,36 @@ Bis zu 16 Items alle 5 Sekunden werden nachgefüllt. Bereits vorhandene Items de
 
 Admin: `/lager empfaenger`
 
+## Chunkloader
+
+Ein spezieller **Magnetstein** hält den Chunk seiner Platzierung (16 × 16 Blöcke, gesamte Welthöhe) über Plugin-Chunk-Tickets geladen. Rezept im Craftingfeld:
+
+```text
+Diamant     Enderperle   Diamant
+Enderperle  Magnetstein  Enderperle
+Diamant     Enderperle   Diamant
+```
+
+Ein gewöhnlicher Magnetstein lädt keine Chunks. Rezept und Anleitung sind unter `/menu` → **Lager & Farmen** → **Chunkloader** erreichbar; das Rezept wird auch im Rezeptbuch freigeschaltet. Admins erhalten das Item mit `/chunkloader`.
+
+- Platzieren aktiviert den Loader sofort. Rechtsklick öffnet sein An/Aus-Menü und zeigt die Chunkkoordinaten. F3 + G zeigt die Grenzen des Chunks.
+- Kein Brennstoff und keine laufenden Kosten. Der Loader bleibt ohne Spieler und bei ausgeloggtem Besitzer aktiv. Nach einem normalen Serverneustart wird der gespeicherte Zustand wiederhergestellt; während der Server ausgeschaltet ist, läuft nichts weiter.
+- Besitzer und aktuelle Lagerteammitglieder dürfen das Menü bedienen; nur Besitzer oder Admin dürfen den Block abbauen. Beim normalen Abbau mit einer Spitzhacke im Überlebensmodus fällt das Chunkloader-Item wieder heraus. Explosionen und Kolben können den registrierten Block nicht entfernen/verschieben.
+- Ausschalten/Abbauen entfernt nur den Bedarf dieses Loaders. Andere Loader im selben Chunk, Bots und offene Lagerfenster behalten ihre eigenen Tickets. Minecraft kann zusätzlich benachbarte Chunks für seine internen Abläufe laden.
+- Öfen, Trichter und Plugin-Maschinen können weiterarbeiten. Dies simuliert keinen Spieler: Natürliches Pflanzenwachstum und Mob-Spawns unterliegen weiterhin ihren Vanilla-Bedingungen. Eigene Einstellungen des Servers oder anderer Plugins können Verarbeitung zusätzlich begrenzen.
+
+Besitzer, Position und Aktivzustand stehen in `plugins/Casino/chunk-loaders.yml`; eine eindeutige Markierung im Weltchunk verhindert, dass ein ersetzter normaler Magnetstein als alter Loader gilt. Welt und Plugin-Daten gemeinsam sichern. Nachträglich abgebrochene Platzierungen werden zurückgenommen, entfernte Blöcke beim Prüfen aus dem Index gelöscht. Ungeladene Welten bleiben gespeichert und werden beim Laden berücksichtigt. Bei einem Speicherfehler werden die Chunkloader-Tickets freigegeben und die Loader bis zum Neustart angehalten; die Konsole nennt den Fehler.
+
+Automatisiert geprüft: Speichern/Neustart, An/Aus, Abbau aus dem Index, fehlgeschlagene Speicherung ohne Änderung am bisherigen Stand, negativer Chunkrand, Überschneidungen, getrennte Welten und ausstehende/abgebrochene Platzierungen im Ticketbedarf. Ingame noch prüfen: Rezept, Menü/Teamrechte, Platzier-/Abbauschutz anderer Plugins, Drop, Weiterlaufen von Ofen/Trichter ohne Spieler, mehrere Loader, Neustart sowie Weltentladen/-neuladen.
+
+## Kisten unter Fässern
+
+Normale Kisten und Redstone-Kisten lassen sich per Rechtsklick auch öffnen, wenn direkt darüber ein Fass steht. Das gilt ebenso für Doppelkisten und für Lagerterminals oder Mülleimer, die als Fass platziert sind. Bei Doppelkisten werden beide Hälften geprüft und das vollständige echte Inventar geöffnet. Andere Hindernisse über der zweiten Hälfte werden weiterhin berücksichtigt.
+
+Schleichen mit einem Item in einer Hand bleibt zum Anbauen von Trichtern/Blöcken nutzbar. Abgebrochene Interaktionen und Inventaröffnungen durch Schutzplugins werden respektiert; die normalen Kistenschlösser bleiben über den ursprünglichen Inventaranbieter wirksam. Beim Weggehen oder Entfernen einer Kistenhälfte wird das Fenster geschlossen; Klicks auf ein inzwischen ungültiges Kisteninventar werden sofort gesperrt.
+
+Automatisiert geprüft: Einzel-/Doppelkisten, ein oder zwei Fässer darüber, andere Hindernisse, nachträglich gesperrte Interaktion, fremdes geöffnetes Menü, Offhand, Schleichen, Spectator, ungeladener Chunk, Weggehen und Abbau bei offenem Fenster. Ingame noch prüfen: Kistenanimation, Redstone-Kiste, Hopper-Anbau, Vanilla-Schloss, aktive Schutzplugins und gleichzeitiger Zugriff mehrerer Spieler.
+
 ## Kategorien
 
 Die Kiste unten im Lager wechselt zwischen Alle, Rüstungen, Erze, Holz, Baublöcke, Werkzeuge, Waffen, Nahrung, Pflanzen, Redstone und Mob-Drops sowie eigenen Kategorien. Die Kategorien sind gefilterte Ansichten desselben Lagers, keine getrennten Speicher. Sie gelten auch am Handy und werden am Lagerterminal gespeichert. Ein Item kann in mehreren Ansichten erscheinen, wird aber nur einmal gespeichert. Neue Standardkategorien werden bei bestehenden Lagern einmalig ergänzt; bereits angelegte eigene Filter gleichen Namens bleiben erhalten. Danach gelöschte Kategorien bleiben auch nach einem Neustart gelöscht.

@@ -153,6 +153,7 @@ final class MainMenu implements Listener {
                 }
             }
             case "Lager & Farmen" -> {
+                icon(page,11,Material.LODESTONE,"Chunkloader","Klicken: Rezept und Bedienung","Hält einen Chunk auch offline geladen.");
                 icon(page,15,Material.GOLD_BLOCK,"Lager erweitern","Klicken: eine zusätzliche Seite kaufen","+45 Plätze · immer 200 € pro Seite");
                 icon(page,13,Material.IRON_AXE,"Holzfällerbot","Klicken: Rezept und Bedienung");
                 icon(page, 40, Material.DAYLIGHT_DETECTOR, "Aufzug", "Klicken: Rezept und Bedienung ansehen");
@@ -184,6 +185,14 @@ final class MainMenu implements Listener {
                 icon(page,33,Material.BOOK,"Baumfarm vorbereiten","Chunk prüfen → vorhandene Bäume räumen → Runde pflanzen","Alle Setzlinge versorgen → alle Bäume gemeinsam ernten","Knochenmehl optional · ohne auf natürliches Wachstum warten","Bis zu 16 Pflanzplätze · breite/2×2-Bäume: 9","Pflanzplätze brauchen freien Gras-/Erdboden auf ähnlicher Höhe","Kiste oder Doppelkiste neben die Stationsschiene","Dunkleiche/Bleicheiche: 4 Setzlinge pro Pflanzung");
                 icon(page,45,Material.ARROW,"Zurück zu Lager & Farmen");
             }
+            case "Chunkloader" -> {
+                for(int slot : new int[]{10,12,28,30}) icon(page,slot,Material.DIAMOND,"Diamant");
+                for(int slot : new int[]{11,19,21,29}) icon(page,slot,Material.ENDER_PEARL,"Enderperle");
+                icon(page,20,Material.LODESTONE,"Magnetstein");
+                icon(page,24,Material.LODESTONE,"Chunkloader","4 Diamanten + 4 Enderperlen + 1 Magnetstein","Platzieren: aktiv · Rechtsklick: An/Aus","Ein Chunk: 16 × 16 über die gesamte Welthöhe","Bleibt offline aktiv und startet nach Serverneustart wieder.");
+                icon(page,33,Material.BOOK,"Hinweise","F3 + G zeigt die Chunkgrenzen.","Kein Brennstoff nötig · Mit Spitzhacke abbauen.","Bedienung: Besitzer und Lagerteam · Abbau: Besitzer","Öfen, Trichter und Plugin-Maschinen laufen weiter.","Wachstum und natürliche Mob-Spawns behalten Vanilla-Bedingungen.");
+                icon(page,45,Material.ARROW,"Zurück zu Lager & Farmen");
+            }
             case "Aufzug" -> {
                 for (int slot : new int[]{10, 11, 12, 19, 21, 28, 29, 30})
                     icon(page, slot, Material.IRON_INGOT, "Eisenbarren");
@@ -209,9 +218,9 @@ final class MainMenu implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (!p.isOnline() || p.getOpenInventory().getTopInventory().getHolder() != page) return;
             if (slot == 53) { p.closeInventory(); return; }
-            if (slot == 45 && !page.section.equals("Hauptmenü")) { open(p, (page.section.equals("Aufzug")||page.section.equals("Holzfällerbot")) ? "Lager & Farmen" : page.section.equals("Kontoverlauf") ? "Konto" : "Hauptmenü", 0); return; }
+            if (slot == 45 && !page.section.equals("Hauptmenü")) { open(p, (page.section.equals("Aufzug")||page.section.equals("Holzfällerbot")||page.section.equals("Chunkloader")) ? "Lager & Farmen" : page.section.equals("Kontoverlauf") ? "Konto" : "Hauptmenü", 0); return; }
             switch (page.section) {
-                case "Lager & Farmen" -> { if (slot == 40) open(p, "Aufzug", 0);else if(slot==13)open(p,"Holzfällerbot",0);else if(slot==15)open(p,"Lager erweitern",0); }
+                case "Lager & Farmen" -> { if(slot==11)open(p,"Chunkloader",0);else if (slot == 40) open(p, "Aufzug", 0);else if(slot==13)open(p,"Holzfällerbot",0);else if(slot==15)open(p,"Lager erweitern",0); }
                 case "Hauptmenü" -> {
                     if(slot==40&&machines!=null)machines.open(p);
                     else if (slot == 20) open(p, "Konto", 0);

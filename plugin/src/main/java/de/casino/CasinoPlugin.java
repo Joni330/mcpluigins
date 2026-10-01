@@ -32,6 +32,8 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     private BotAlerts botAlerts; private MachineOverview machineOverview;
     private HomeData homeData;
     private Backpacks backpacks;
+    private BarrelChestAccess barrelChests;
+    private ChunkLoaders chunkLoaders;
 
     @Override public void onEnable() {
         itemKey = new NamespacedKey(this, "exchange_item");
@@ -43,13 +45,14 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
             accounts = new Accounts(getDataFolder().toPath());
             storageTeams = new StorageTeams(getDataFolder().toPath());
             homeData = new HomeData(getDataFolder().toPath());
+            chunkLoaders = new ChunkLoaders(this, storageTeams);
             miningBots = new MiningBots(this, storageTeams);
             botAlerts = new BotAlerts(this);
             miningBots.alerts(botAlerts);
             advancedMiningBots = new AdvancedMiningBots(this, storageTeams, miningBots, botAlerts);
         }
         catch (Exception error) {
-            getLogger().log(java.util.logging.Level.SEVERE, "Kontodaten konnten nicht geladen werden.", error);
+            getLogger().log(java.util.logging.Level.SEVERE, "Plugin-Daten konnten nicht geladen werden.", error);
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -61,11 +64,15 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         Objects.requireNonNull(getCommand("payload")).setTabCompleter(this);
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new AnvilImprovements(), this);
+        barrelChests=new BarrelChestAccess(task -> Bukkit.getScheduler().runTask(this, task));
+        getServer().getPluginManager().registerEvents(barrelChests, this);
+        Bukkit.getScheduler().runTaskTimer(this,barrelChests::tick,10L,10L);
         chips = new Chips(this);
         getServer().getPluginManager().registerEvents(chips, this);
         registerMachineRecipe();
         elevators = new Elevators(this);
         elevators.enable();
+        chunkLoaders.enable();
         miningBots.enable();
         advancedMiningBots.enable();
         new MiningBotDesign(this, miningBots, advancedMiningBots).enable();
@@ -103,6 +110,8 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     }
 
     @Override public void onDisable() {
+        if(chunkLoaders!=null)chunkLoaders.disable();
+        if(barrelChests!=null)barrelChests.disable();
         if(machineOverview!=null)machineOverview.disable();
         if (advancedMiningBots != null) advancedMiningBots.disable();
         if (miningBots != null) miningBots.disable();

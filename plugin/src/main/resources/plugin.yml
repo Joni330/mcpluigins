@@ -4,6 +4,10 @@ main: de.casino.CasinoPlugin
 api-version: '26.3'
 description: Casino-Konten, Wechselautomaten und Kistenmenü
 commands:
+  chunkloader:
+    description: Als Admin ein Chunkloader-Item erhalten
+    usage: /chunkloader
+    permission: casino.admin
   miningbot:
     description: MiningBot-Item erhalten oder einen Entwurf verwalten
     usage: /miningbot <give|steinbruch|erzsucher|holzfaeller|design|entfernen>
