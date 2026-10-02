@@ -42,4 +42,15 @@ class RecipeAllocationTest {
         assertTrue(StorageSearch.matches("CRAFTING_TABLE", "", "Werkbank"));
         assertFalse(StorageSearch.matches("IRON_HELMET", "", "Diamanthelm"));
     }
+    @Test void recipeBookCanAllocateFlexibleAndExactIngredientsAcrossBothSources() {
+        VirtualStorage<String> storage = new VirtualStorage<>(450), inventory = new VirtualStorage<>(36);
+        storage.set(449, "oak", 1); inventory.set(35, "birch", 1);
+        var combined = StorageCraftingPlan.available(storage, inventory);
+        var slots = RecipeAllocation.match(combined, List.of(s -> true, "oak"::equals));
+        assertArrayEquals(new int[]{485,449}, slots);
+        var matrix = Arrays.stream(slots).mapToObj(i -> combined.get(i).item()).toList();
+        var plan = StorageCraftingPlan.reserve(storage, inventory, matrix, Objects::equals);
+        assertNotNull(plan); assertNull(plan.storage().get(449)); assertNull(plan.inventory().get(35));
+        assertEquals("oak", storage.get(449).item()); assertEquals("birch", inventory.get(35).item());
+    }
 }

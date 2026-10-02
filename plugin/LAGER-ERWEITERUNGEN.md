@@ -68,6 +68,14 @@ Schleichen mit einem Item in einer Hand bleibt zum Anbauen von Trichtern/Blöcke
 
 Automatisiert geprüft: Einzel-/Doppelkisten und Redstone-Kisten unter verschiedenen Blöcken, Zugriff von beiden Seiten bei einem Fass nur über einer Hälfte (mit Papers kombinierter Blockade), unveränderte Abdeckung, nachträglich gesperrte Interaktion/Inventaröffnung, fremdes geöffnetes Menü, Offhand, Schleichen, Spectator, ungeladene Hälfte, Weggehen und Abbau der anderen Hälfte bei offenem Fenster. Ingame noch prüfen: Kistenanimation, Hopper-Anbau, Vanilla-Schloss, aktive Schutzplugins und gleichzeitiger Zugriff mehrerer Spieler.
 
+## Lager-Werkbank: Lager und Spielerinventar
+
+Die Werkbank am Terminal und über das Lager-Handy erkennt Zutaten aus dem gesamten verbundenen Lager und den 36 normalen Spielerinventarplätzen einschließlich Hotbar. Im Rezeptbuch werden beide Bestände gemeinsam für die Herstellbarkeit und das automatische Befüllen geprüft. Zum manuellen Befüllen eine Rezeptzelle öffnen und entweder oben eine Lagerzutat oder unten ein Item im Spielerinventar anklicken. Dieser Klick setzt nur eine Vorlage; verbraucht wird erst beim Herstellen.
+
+Für identische Zutaten wird zuerst das Lager verwendet und anschließend die fehlende Menge aus dem Spielerinventar. Ein Rezept kann seine Zutaten vollständig aus einem der beiden Bestände oder aus beiden zusammen beziehen. Metadaten, Namen und Verzauberungen werden beim Vergleich berücksichtigt. Shift-Linksklick verarbeitet weiterhin bis zu 64 Rezeptdurchläufe und prüft nach jedem Durchlauf den verbleibenden Bestand. Rüstung und Offhand zählen nicht zu den Zutaten.
+
+Ergebnis und Restitems (z. B. Eimer) kommen ins Spielerinventar. Plätze, die durch verbrauchte Zutaten frei werden, sind dabei bereits verfügbar. Fehlen Zutaten oder reicht der Platz für Ergebnis und Restitems nicht, wird der betreffende Durchlauf verworfen. Erst nach erfolgreicher Lagerspeicherung werden die geplanten Inventaränderungen übernommen. Automatisiert geprüft: gemischte Zutaten, Zutaten nur im Inventar, Lagerpriorität, Mengen über mehrere Slots/Seiten, fehlende Zutaten ohne Verbrauch, Metadaten, wiederholtes Craften und flexible/exakte Rezeptzutaten über beide Bestände. Ingame noch prüfen: Rezeptbuchanzeige, manuelle Auswahl im unteren Inventar, Shift-Crafting, volle Inventare und Restitems.
+
 ## Kategorien
 
 Die Kiste unten im Lager wechselt zwischen Alle, Rüstungen, Erze, Holz, Baublöcke, Werkzeuge, Waffen, Nahrung, Pflanzen, Redstone und Mob-Drops sowie eigenen Kategorien. Die Kategorien sind gefilterte Ansichten desselben Lagers, keine getrennten Speicher. Sie gelten auch am Handy und werden am Lagerterminal gespeichert. Ein Item kann in mehreren Ansichten erscheinen, wird aber nur einmal gespeichert. Neue Standardkategorien werden bei bestehenden Lagern einmalig ergänzt; bereits angelegte eigene Filter gleichen Namens bleiben erhalten. Danach gelöschte Kategorien bleiben auch nach einem Neustart gelöscht.

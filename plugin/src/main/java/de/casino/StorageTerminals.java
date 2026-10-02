@@ -71,7 +71,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             for (int i = 45; i < 54; i++) control(i, Material.GRAY_STAINED_GLASS_PANE, " ");
             control(46, Material.COMPASS, "Suchen · Namen im Chat eingeben");
             control(47, Material.HOPPER, "Sortieren · Links: Itemtyp / Rechts: Stapelgröße");
-            control(48, Material.CRAFTING_TABLE, "Werkbank · Zutaten aus diesem Lager");
+            control(48, Material.CRAFTING_TABLE, "Werkbank · Zutaten aus Lager + Inventar");
             control(50,Material.CHEST,"Kategorie: "+category+" · Links: wechseln / Rechts: eigene anlegen");
             control(51, Material.SPYGLASS, "Nächster Suchtreffer");
             if (index > 0) control(45, Material.ARROW, "Vorherige Seite");
@@ -109,6 +109,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         craft.choices.clear();
         for (int i = 0; i < 54; i++) inventory.setItem(i, ExchangeMenu.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
         if (craft.book) {
+            var available = StorageCraftingPlan.available(craft.store.data, craftingInventory(player.getInventory().getStorageContents()));
             int pages = Math.max(1, (craft.recipes.size() + 44) / 45);
             craft.recipePage = Math.clamp(craft.recipePage, 0, pages - 1);
             for (int i = 0; i < 45; i++) {
@@ -116,7 +117,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
                 inventory.setItem(i, null);
                 if (index >= craft.recipes.size()) continue;
                 var recipe = craft.recipes.get(index);
-                var selection = recipe.select(craft.store.data);
+                var selection = recipe.select(available);
                 ItemStack icon = recipe.recipe().getResult().clone();
                 var meta = icon.getItemMeta();
                 var color = selection.available() ? net.kyori.adventure.text.format.NamedTextColor.GREEN : net.kyori.adventure.text.format.NamedTextColor.RED;
@@ -124,6 +125,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
                 meta.displayName(name.color(color));
                 List<Component> lore = new ArrayList<>();
                 lore.add(Component.text(selection.available() ? "Herstellbar · Klicken: Rezept übernehmen" : "Zutaten fehlen · Klicken: Rezept ansehen", color));
+                lore.add(Component.text("Zutaten aus Lager + Spielerinventar"));
                 for (ItemStack missing : selection.missing()) lore.add(Component.text("Fehlt: 1× ", color).append(Component.translatable(missing.getType().translationKey())));
                 lore.add(Component.text(recipe.key(), net.kyori.adventure.text.format.NamedTextColor.DARK_GRAY));
                 meta.lore(lore); meta.setEnchantmentGlintOverride(selection.available()); icon.setItemMeta(meta);
@@ -147,6 +149,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
                 meta.lore(lore); icon.setItemMeta(meta); inventory.setItem(i, icon);
             }
             if (craft.page > 0) inventory.setItem(45, ExchangeMenu.icon(Material.ARROW, "Vorherige Seite"));
+            inventory.setItem(48, ExchangeMenu.icon(Material.PAPER, "Auch unten im Spielerinventar eine Zutat wählen"));
             inventory.setItem(49, ExchangeMenu.icon(Material.BARRIER, "Zurück zur Werkbank"));
             if (craft.page + 1 < craft.store.pageCount()) inventory.setItem(53, ExchangeMenu.icon(Material.ARROW, "Nächste Seite"));
         } else {
@@ -156,6 +159,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             inventory.setItem(24, result == null ? ExchangeMenu.icon(Material.BARRIER, "Noch kein gültiges Rezept") : result);
             inventory.setItem(33, ExchangeMenu.icon(Material.LIME_STAINED_GLASS_PANE, "Herstellen · Shift-Linksklick: bis zu 64 Durchläufe"));
             inventory.setItem(45, ExchangeMenu.icon(Material.ARROW, "Zurück zum Lager"));
+            inventory.setItem(48, ExchangeMenu.icon(Material.PAPER, "Zutaten aus Lager + Spielerinventar"));
             inventory.setItem(49, ExchangeMenu.icon(Material.BOOK, "Rezeptbuch · Rezept suchen und automatisch befüllen"));
             inventory.setItem(53, ExchangeMenu.icon(Material.BARRIER, "Vorlage leeren"));
         }
@@ -182,6 +186,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
                 || event instanceof InventoryCreativeEvent || event.getClick() != ClickType.LEFT && event.getClick() != ClickType.RIGHT && event.getClick() != ClickType.SHIFT_LEFT) return;
         int slot = event.getRawSlot();
         Inventory previous = craft.inventory;
+        int playerSlot = slot >= previous.getSize() && slot < previous.getSize() + 36 ? event.getSlot() : -1;
         boolean right = event.getClick() == ClickType.RIGHT;
         boolean multiple = event.getClick() == ClickType.SHIFT_LEFT;
         // Inventory changes are deferred; recheck the session, permissions and live quantities afterwards.
@@ -192,7 +197,8 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
                 int index = craft.recipePage * 45 + slot;
                 if (slot >= 0 && slot < 45 && index < craft.recipes.size()) {
                     craft.selectedRecipe = craft.recipes.get(index);
-                    System.arraycopy(craft.selectedRecipe.select(craft.store.data).matrix(), 0, craft.matrix, 0, 9);
+                    var available = StorageCraftingPlan.available(craft.store.data, craftingInventory(player.getInventory().getStorageContents()));
+                    System.arraycopy(craft.selectedRecipe.select(available).matrix(), 0, craft.matrix, 0, 9);
                     craft.book = false;
                 } else if (slot == 45 && craft.recipePage > 0) craft.recipePage--;
                 else if (slot == 53 && (craft.recipePage + 1) * 45 < craft.recipes.size()) craft.recipePage++;
@@ -208,7 +214,13 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
                     }
                 } else return;
             } else if (craft.selecting >= 0) {
-                if (slot >= 0 && slot < 45 && craft.choices.containsKey(slot)) {
+                if (playerSlot >= 0 && playerSlot < 36) {
+                    ItemStack ingredient = player.getInventory().getItem(playerSlot);
+                    if (ingredient == null || ingredient.isEmpty()) return;
+                    craft.matrix[craft.selecting] = ingredient.clone();
+                    craft.matrix[craft.selecting].setAmount(1);
+                    craft.selecting = -1;
+                } else if (slot >= 0 && slot < 45 && craft.choices.containsKey(slot)) {
                     craft.matrix[craft.selecting] = craft.choices.get(slot).clone();
                     craft.selecting = -1;
                 } else if (slot == 45 && craft.page > 0) craft.page--;
@@ -247,19 +259,39 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         });
     }
     private record CraftPlan(VirtualStorage<ItemStack> data, ItemStack[] inventory) {}
+    private static VirtualStorage<ItemStack> craftingInventory(ItemStack[] contents) {
+        VirtualStorage<ItemStack> inventory = new VirtualStorage<>(contents.length);
+        for (int i = 0; i < contents.length; i++) {
+            ItemStack item = contents[i];
+            if (item == null || item.isEmpty()) continue;
+            ItemStack template = item.clone(); template.setAmount(1);
+            inventory.set(i, template, item.getAmount());
+        }
+        return inventory;
+    }
+    private static ItemStack[] inventoryContents(VirtualStorage<ItemStack> inventory) {
+        ItemStack[] contents = new ItemStack[inventory.size()];
+        for (int i = 0; i < contents.length; i++) {
+            var entry = inventory.get(i);
+            if (entry == null) continue;
+            contents[i] = entry.item().clone(); contents[i].setAmount(entry.count());
+        }
+        return contents;
+    }
     private CraftPlan performCraft(Player player, Craft craft, CraftPlan source, boolean report) {
+        var playerItems = craftingInventory(source.inventory());
         if (craft.selectedRecipe != null) {
-            var selection = craft.selectedRecipe.select(source.data());
-            if (!selection.available()) { if (report) player.sendMessage("Im Lager fehlen Zutaten für dieses Rezept."); return null; }
+            var selection = craft.selectedRecipe.select(StorageCraftingPlan.available(source.data(), playerItems));
+            if (!selection.available()) { if (report) player.sendMessage("In Lager und Inventar fehlen Zutaten für dieses Rezept."); return null; }
             System.arraycopy(selection.matrix(), 0, craft.matrix, 0, 9);
             Recipe actual = Bukkit.getCraftingRecipe(matrixCopy(craft), craft.store.location.getWorld());
             if (!(actual instanceof Keyed keyed) || !keyed.getKey().toString().equals(craft.selectedRecipe.key())) {
                 if (report) player.sendMessage("Dieses Rezept ist mit den gewählten Zutaten nicht verfügbar."); return null;
             }
         }
-        VirtualStorage<ItemStack> next = StorageCraftingPlan.reserve(source.data(),
+        var reserved = StorageCraftingPlan.reserve(source.data(), playerItems,
                 Arrays.asList(craft.matrix), ItemStack::isSimilar);
-        if (next == null) { if (report) player.sendMessage("Im Lager fehlen Zutaten für diese Vorlage."); return null; }
+        if (reserved == null) { if (report) player.sendMessage("In Lager und Inventar fehlen Zutaten für diese Vorlage."); return null; }
         var result = Bukkit.craftItemResult(matrixCopy(craft), craft.store.location.getWorld());
         ItemStack output = result.getResult();
         if (output == null || output.getType().isAir()) { if (report) player.sendMessage("Diese Vorlage ergibt kein Rezept."); return null; }
@@ -270,8 +302,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             if (remainder != null && !remainder.getType().isAir()) delivered.add(remainder.clone());
         for (ItemStack remainder : result.getOverflowItems())
             if (remainder != null && !remainder.getType().isAir()) delivered.add(remainder.clone());
-        ItemStack[] destination = Arrays.stream(source.inventory())
-                .map(i -> i == null ? null : i.clone()).toArray(ItemStack[]::new);
+        ItemStack[] destination = inventoryContents(reserved.inventory());
         for (ItemStack item : delivered) {
             int left = item.getAmount();
             int limit = Math.min(64, item.getMaxStackSize());
@@ -290,7 +321,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         }
 
 
-        return new CraftPlan(next, destination);
+        return new CraftPlan(reserved.storage(), destination);
     }
     StorageTerminals(JavaPlugin plugin, StorageTeams teams, Accounts accounts) {
         this.plugin = plugin;
