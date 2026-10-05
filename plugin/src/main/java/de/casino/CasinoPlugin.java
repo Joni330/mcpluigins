@@ -34,6 +34,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     private Backpacks backpacks;
     private ChestAccess chestAccess;
     private ChunkLoaders chunkLoaders;
+    private XpTanks xpTanks;
 
     @Override public void onEnable() {
         itemKey = new NamespacedKey(this, "exchange_item");
@@ -45,7 +46,9 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
             accounts = new Accounts(getDataFolder().toPath());
             storageTeams = new StorageTeams(getDataFolder().toPath());
             homeData = new HomeData(getDataFolder().toPath());
+            storageTerminals = new StorageTerminals(this, storageTeams, accounts);
             chunkLoaders = new ChunkLoaders(this, storageTeams);
+            xpTanks = new XpTanks(this, storageTeams);
             miningBots = new MiningBots(this, storageTeams);
             botAlerts = new BotAlerts(this);
             miningBots.alerts(botAlerts);
@@ -73,13 +76,13 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
         elevators = new Elevators(this);
         elevators.enable();
         chunkLoaders.enable();
+        xpTanks.enable();
         miningBots.enable();
         advancedMiningBots.enable();
         new MiningBotDesign(this, miningBots, advancedMiningBots).enable();
         StorageTeamCommand teamCommand = new StorageTeamCommand(storageTeams);
         Objects.requireNonNull(getCommand("lagerteam")).setExecutor(teamCommand);
         Objects.requireNonNull(getCommand("lagerteam")).setTabCompleter(teamCommand);
-        storageTerminals = new StorageTerminals(this, storageTeams, accounts);
         storageTerminals.enable();machineOverview=new MachineOverview(this,storageTeams);machineOverview.source(miningBots::machineEntries);machineOverview.source(advancedMiningBots::machineEntries);machineOverview.enable();
         backpacks = new Backpacks(this, accounts);
         backpacks.enable();
@@ -110,6 +113,7 @@ public final class CasinoPlugin extends JavaPlugin implements Listener, TabCompl
     }
 
     @Override public void onDisable() {
+        if(xpTanks!=null)xpTanks.disable();
         if(chunkLoaders!=null)chunkLoaders.disable();
         if(chestAccess!=null)chestAccess.disable();
         if(machineOverview!=null)machineOverview.disable();

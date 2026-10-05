@@ -153,6 +153,7 @@ final class MainMenu implements Listener {
                 }
             }
             case "Lager & Farmen" -> {
+                icon(page,4,Material.CAULDRON,"XP-Tank","Klicken: Rezept und Bedienung","XP sicher speichern · ohne Resourcepack-Update");
                 icon(page,11,Material.LODESTONE,"Chunkloader","Klicken: Rezept und Bedienung","Hält einen Chunk auch offline geladen.");
                 icon(page,15,Material.GOLD_BLOCK,"Lager erweitern","Klicken: eine zusätzliche Seite kaufen","+45 Plätze · immer 200 € pro Seite");
                 icon(page,13,Material.IRON_AXE,"Holzfällerbot","Klicken: Rezept und Bedienung");
@@ -162,7 +163,7 @@ final class MainMenu implements Listener {
                 icon(page,29,Material.BARREL,"Mülleimer","Craften: Eisen oben, links und rechts vom Fass; Lavaeimer darunter.","Trichter anschließen: Items werden dauerhaft gelöscht.");
                 icon(page,31,Material.DISPENSER,"Lager-Empfänger","Rezept wie Sender, aber Werfer in der Mitte.","Mit Lager-Handy schleichend rechtsklicken: verbinden.","Rechtsklick: Itemauswahl und Zielmenge.","Kiste daneben: bis zu 16 Items alle 5 Sekunden.");
                 icon(page,33,Material.CHEST,"Lagerkategorien","Rüstungen, Erze, Holz und Baublöcke","Werkzeuge, Waffen, Nahrung und Pflanzen","Redstone und Mob-Drops","Kiste unten: Kategorie wechseln · Rechtsklick: eigene Filter","Klick: 1 Item · Shift-Klick: bis zu 64.");
-                icon(page, 20, Material.BARREL, "Lagerterminal", "Rechtsklick am Terminal öffnet dein Lager.", "Start: 10 Seiten · 450 Plätze", "Erweiterbar · bis zu 1.024 Items pro Platz");
+                icon(page, 20, Material.BARREL, "Lagerterminal", "Rechtsklick am Terminal öffnet dein Lager.", "Start: 10 Seiten · 450 Plätze", "Erweiterbar · bis zu 1.024 Items pro Platz", "Umziehen: Lager einpacken im Lagermenü", "Oder auf das Terminal schauen: /lager umzug", "Items, Seiten, Kategorien und Verbindungen ziehen mit.");
                 icon(page, 22, Material.COMPASS, "Lager-Handy", "Schleichen + Rechtsklick am Terminal: verbinden", "Rechtsklick mit deinem Handy: Fernzugriff");
                 icon(page, 24, Material.DROPPER, "Lager-Sender", "Mit verbundenem Handy schleichend rechtsklicken.", "Leere Hand + Schleichen: Filtermenü", "Überlaufkiste vor die Ausgabeseite stellen.");
             }
@@ -183,6 +184,14 @@ final class MainMenu implements Listener {
                 icon(page,19,Material.OAK_SAPLING,"Eichensetzling");icon(page,20,Material.FURNACE,"Ofen");icon(page,21,Material.OAK_SAPLING,"Eichensetzling");icon(page,29,Material.MINECART,"Lore");
                 icon(page,24,Material.FURNACE_MINECART,"Holzfällerbot","Station setzen · im Terminal Kompass holen","Bot mit dem Kompass im Arbeitschunk platzieren","Axt und Setzlinge einlegen · Start","Knochenmehl optional · 216 Lagerplätze");
                 icon(page,33,Material.BOOK,"Baumfarm vorbereiten","Chunk prüfen → vorhandene Bäume räumen → Runde pflanzen","Alle Setzlinge versorgen → alle Bäume gemeinsam ernten","Knochenmehl optional · ohne auf natürliches Wachstum warten","Bis zu 16 Pflanzplätze · breite/2×2-Bäume: 9","Pflanzplätze brauchen freien Gras-/Erdboden auf ähnlicher Höhe","Kiste oder Doppelkiste neben die Stationsschiene","Dunkleiche/Bleicheiche: 4 Setzlinge pro Pflanzung");
+                icon(page,45,Material.ARROW,"Zurück zu Lager & Farmen");
+            }
+            case "XP-Tank" -> {
+                for(int slot : new int[]{10,12,28,30}) icon(page,slot,Material.LAPIS_BLOCK,"Lapisblock");
+                for(int slot : new int[]{11,19,21,29}) icon(page,slot,Material.GLASS,"Glas");
+                icon(page,20,Material.CAULDRON,"Kessel");
+                icon(page,24,Material.CAULDRON,"XP-Tank","4 Lapisblöcke + 4 Glasblöcke + 1 Kessel","Platzieren und rechtsklicken","1 Level, 5 Level oder alle XP einzahlen/entnehmen","Speichert echte XP-Punkte · beim Tod geschützt");
+                icon(page,33,Material.BOOK,"Zugriff und Abbau","Anfangs privat · Teamfreigabe im Tankmenü","Teamfreigabe: aktuelles Lagerteam darf XP nutzen","Zum Abbauen erst leeren · danach mit Spitzhacke abbauen","Vanilla-Kessel · kein neues Resourcepack nötig","XP-Kugeln werden vorerst nicht automatisch gesammelt.");
                 icon(page,45,Material.ARROW,"Zurück zu Lager & Farmen");
             }
             case "Chunkloader" -> {
@@ -218,9 +227,9 @@ final class MainMenu implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (!p.isOnline() || p.getOpenInventory().getTopInventory().getHolder() != page) return;
             if (slot == 53) { p.closeInventory(); return; }
-            if (slot == 45 && !page.section.equals("Hauptmenü")) { open(p, (page.section.equals("Aufzug")||page.section.equals("Holzfällerbot")||page.section.equals("Chunkloader")) ? "Lager & Farmen" : page.section.equals("Kontoverlauf") ? "Konto" : "Hauptmenü", 0); return; }
+            if (slot == 45 && !page.section.equals("Hauptmenü")) { open(p, (page.section.equals("Aufzug")||page.section.equals("Holzfällerbot")||page.section.equals("Chunkloader")||page.section.equals("XP-Tank")) ? "Lager & Farmen" : page.section.equals("Kontoverlauf") ? "Konto" : "Hauptmenü", 0); return; }
             switch (page.section) {
-                case "Lager & Farmen" -> { if(slot==11)open(p,"Chunkloader",0);else if (slot == 40) open(p, "Aufzug", 0);else if(slot==13)open(p,"Holzfällerbot",0);else if(slot==15)open(p,"Lager erweitern",0); }
+                case "Lager & Farmen" -> { if(slot==4)open(p,"XP-Tank",0);else if(slot==11)open(p,"Chunkloader",0);else if (slot == 40) open(p, "Aufzug", 0);else if(slot==13)open(p,"Holzfällerbot",0);else if(slot==15)open(p,"Lager erweitern",0); }
                 case "Hauptmenü" -> {
                     if(slot==40&&machines!=null)machines.open(p);
                     else if (slot == 20) open(p, "Konto", 0);

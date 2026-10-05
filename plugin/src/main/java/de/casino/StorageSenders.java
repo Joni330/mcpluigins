@@ -121,7 +121,6 @@ final class StorageSenders implements Listener {
         String link = terminals.senderLink(e.getPlayer(), e.getItem());
         if (link == null) return;
         e.setCancelled(true);
-        if (!link.startsWith(d.getWorld().getUID() + ";")) { e.getPlayer().sendMessage("Sender und Lager müssen in derselben Welt sein."); return; }
         String owner = d.getPersistentDataContainer().get(ownerKey, PersistentDataType.STRING);
         String problem = owner == null ? "Sender-Besitzer fehlt." : terminals.senderTargetProblem(UUID.fromString(owner), d.getWorld(), link);
         if (problem != null) { e.getPlayer().sendMessage("Sender nicht verbunden: " + problem); return; }

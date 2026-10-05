@@ -30,6 +30,10 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     private final Map<UUID, UUID> remoteUsers = new HashMap<>();
     private boolean stopping;
     private StorageSenders senders; private StorageDevices devices; private HopperMk2 hopperMk2;
+    private final StorageMoveData moves;
+    private final NamespacedKey moveId, moveToken;
+    private final Set<Location> packing = new HashSet<>();
+    private final Set<UUID> placingMoves = new HashSet<>();
     private record SearchRequest(Store store, boolean remote) {}
     private record SearchCursor(UUID store, String query, int slot) {}
     private final Map<UUID, SearchRequest> searching = new java.util.concurrent.ConcurrentHashMap<>();
@@ -72,6 +76,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             control(46, Material.COMPASS, "Suchen · Namen im Chat eingeben");
             control(47, Material.HOPPER, "Sortieren · Links: Itemtyp / Rechts: Stapelgröße");
             control(48, Material.CRAFTING_TABLE, "Werkbank · Zutaten aus Lager + Inventar");
+            control(49, Material.SHULKER_BOX, "Lager einpacken · Umziehen mit Inhalt");
             control(50,Material.CHEST,"Kategorie: "+category+" · Links: wechseln / Rechts: eigene anlegen");
             control(51, Material.SPYGLASS, "Nächster Suchtreffer");
             if (index > 0) control(45, Material.ARROW, "Vorherige Seite");
@@ -109,7 +114,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         craft.choices.clear();
         for (int i = 0; i < 54; i++) inventory.setItem(i, ExchangeMenu.icon(Material.GRAY_STAINED_GLASS_PANE, " "));
         if (craft.book) {
-            var available = StorageCraftingPlan.available(craft.store.data, craftingInventory(player.getInventory().getStorageContents()));
+            var available = craftableSources(craft.store.data, craftingInventory(player.getInventory().getStorageContents()));
             int pages = Math.max(1, (craft.recipes.size() + 44) / 45);
             craft.recipePage = Math.clamp(craft.recipePage, 0, pages - 1);
             for (int i = 0; i < 45; i++) {
@@ -197,7 +202,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
                 int index = craft.recipePage * 45 + slot;
                 if (slot >= 0 && slot < 45 && index < craft.recipes.size()) {
                     craft.selectedRecipe = craft.recipes.get(index);
-                    var available = StorageCraftingPlan.available(craft.store.data, craftingInventory(player.getInventory().getStorageContents()));
+                    var available = craftableSources(craft.store.data, craftingInventory(player.getInventory().getStorageContents()));
                     System.arraycopy(craft.selectedRecipe.select(available).matrix(), 0, craft.matrix, 0, 9);
                     craft.book = false;
                 } else if (slot == 45 && craft.recipePage > 0) craft.recipePage--;
@@ -281,7 +286,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     private CraftPlan performCraft(Player player, Craft craft, CraftPlan source, boolean report) {
         var playerItems = craftingInventory(source.inventory());
         if (craft.selectedRecipe != null) {
-            var selection = craft.selectedRecipe.select(StorageCraftingPlan.available(source.data(), playerItems));
+            var selection = craft.selectedRecipe.select(craftableSources(source.data(), playerItems));
             if (!selection.available()) { if (report) player.sendMessage("In Lager und Inventar fehlen Zutaten für dieses Rezept."); return null; }
             System.arraycopy(selection.matrix(), 0, craft.matrix, 0, 9);
             Recipe actual = Bukkit.getCraftingRecipe(matrixCopy(craft), craft.store.location.getWorld());
@@ -289,6 +294,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
                 if (report) player.sendMessage("Dieses Rezept ist mit den gewählten Zutaten nicht verfügbar."); return null;
             }
         }
+        if(Arrays.stream(craft.matrix).anyMatch(this::isMoveItem)){if(report)player.sendMessage("Ein eingepacktes Lager kann nicht als Crafting-Zutat verwendet werden.");return null;}
         var reserved = StorageCraftingPlan.reserve(source.data(), playerItems,
                 Arrays.asList(craft.matrix), ItemStack::isSimilar);
         if (reserved == null) { if (report) player.sendMessage("In Lager und Inventar fehlen Zutaten für diese Vorlage."); return null; }
@@ -323,10 +329,12 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
 
         return new CraftPlan(reserved.storage(), destination);
     }
-    StorageTerminals(JavaPlugin plugin, StorageTeams teams, Accounts accounts) {
+    StorageTerminals(JavaPlugin plugin, StorageTeams teams, Accounts accounts) throws Exception {
         this.plugin = plugin;
         this.teams = teams;
         this.accounts = accounts;
+        moves = new StorageMoveData(plugin.getDataFolder().toPath());
+        moveId = new NamespacedKey(plugin, "storage_move_id"); moveToken = new NamespacedKey(plugin, "storage_move_token");
         virtualItems = new NamespacedKey(plugin, "storage_virtual_items");
         virtualCounts = new NamespacedKey(plugin, "storage_virtual_counts");
         legacyBackup = new NamespacedKey(plugin, "storage_legacy_backup");
@@ -366,7 +374,12 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         Bukkit.removeRecipe(phoneRecipe);
         if (!Bukkit.addRecipe(handset)) throw new IllegalStateException("Handy-Rezept konnte nicht registriert werden");
         Bukkit.getOnlinePlayers().forEach(p -> p.discoverRecipes(List.of(recipe, phoneRecipe)));
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            recoverMoves();
+            for (World world : Bukkit.getWorlds()) for (Chunk chunk : world.getLoadedChunks()) reconcileMoves(chunk);
+        });
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for(Player player:Bukkit.getOnlinePlayers())if(player.getOpenInventory().getTopInventory().getHolder() instanceof MoveMenu menu&&!canUse(player,menu.store,false))player.closeInventory();
             for (Store store : List.copyOf(opened.values())) {
                 for (var viewer : store.viewers())
                     if (!(viewer instanceof Player p) || !canUse(p, store)) viewer.closeInventory();
@@ -387,18 +400,191 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         var meta = item.getItemMeta();
         meta.setMaxStackSize(1);
         meta.lore(List.of(Component.text("Schleichen + Rechtsklick auf ein Terminal: verbinden."),
-                Component.text("Rechtsklick: Lager in derselben Welt öffnen.")));
+                Component.text("Rechtsklick: verbundenes Lager öffnen.")));
         meta.getPersistentDataContainer().set(phoneKey, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta); return item;
     }
     private boolean isPhone(ItemStack item) {
         return item != null && item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().has(phoneKey, PersistentDataType.BYTE);
     }
+    private static StorageMoveData.Point movePoint(Location location) {
+        return new StorageMoveData.Point(location.getWorld().getUID(),location.getBlockX(),location.getBlockY(),location.getBlockZ());
+    }
+    private String resolveLink(String link) {
+        try { return moves.resolve(link); }
+        catch (IllegalStateException error) { return link; } // Keep the binding while packed; transfers report the pause.
+        catch (IllegalArgumentException error) { return null; }
+    }
+    private Block linkBlock(String link) {
+        var point=StorageMoveData.Point.fromLink(link);World world=Bukkit.getWorld(point.world());
+        if(world==null)throw new IllegalStateException("Die Welt des Lagers ist nicht geladen.");
+        return world.getBlockAt(point.x(),point.y(),point.z());
+    }
+    private boolean isMoveItem(ItemStack item) {
+        return item!=null&&item.hasItemMeta()&&item.getItemMeta().getPersistentDataContainer().has(moveId,PersistentDataType.STRING);
+    }
+    private VirtualStorage<ItemStack> craftableSources(VirtualStorage<ItemStack> storage,VirtualStorage<ItemStack> inventory){
+        var combined=StorageCraftingPlan.available(storage,inventory);
+        for(int i=0;i<combined.size();i++){var entry=combined.get(i);if(entry!=null&&isMoveItem(entry.item()))combined.remove(i,entry.count());}
+        return combined;
+    }
+    private ItemStack packedItem(StorageMoveData.Move move) {
+        ItemStack item=ExchangeMenu.icon(Material.BARREL,"Eingepacktes Lager");var meta=item.getItemMeta();meta.setMaxStackSize(1);
+        meta.getPersistentDataContainer().set(moveId,PersistentDataType.STRING,move.id().toString());
+        meta.getPersistentDataContainer().set(moveToken,PersistentDataType.STRING,move.token().toString());
+        var owner=Bukkit.getOfflinePlayer(move.snapshot().owner());
+        meta.lore(List.of(Component.text("Besitzer: "+(owner.getName()==null?move.snapshot().owner():owner.getName())),
+                Component.text(StorageLayout.pages(move.snapshot().counts().length)+" Seiten · "+Arrays.stream(move.snapshot().counts()).asLongStream().sum()+" Items"),
+                Component.text("Am neuen Standort platzieren · Inhalt bleibt erhalten."),
+                Component.text("Lager-ID: "+move.id())));
+        item.setItemMeta(meta);return item;
+    }
+    private static final class MoveMenu implements InventoryHolder {
+        final Store store;final UUID viewer;final Inventory inventory;
+        MoveMenu(Player player,Store store){this.store=store;viewer=player.getUniqueId();inventory=Bukkit.createInventory(this,27,Component.text("Lager einpacken?"));
+            for(int i=0;i<27;i++)inventory.setItem(i,ExchangeMenu.icon(Material.GRAY_STAINED_GLASS_PANE," "));
+            inventory.setItem(11,ExchangeMenu.icon(Material.LIME_WOOL,"Bestätigen · Lager mit Inhalt einpacken"));
+            inventory.setItem(13,ExchangeMenu.icon(Material.SHULKER_BOX,store.pageCount()+" Seiten · Alle Items und Kategorien mitnehmen"));
+            inventory.setItem(15,ExchangeMenu.icon(Material.BARRIER,"Abbrechen"));}
+        @Override public Inventory getInventory(){return inventory;}
+    }
+    private void showMove(Player player,Store store) {
+        if(!canUse(player,store,false)){player.sendMessage("Zum Einpacken bitte direkt zum Lagerterminal gehen.");return;}
+        if(!owns(player,store.location.getBlock())){player.sendMessage("Nur der Besitzer oder ein Admin darf das Lager einpacken.");return;}
+        player.openInventory(new MoveMenu(player,store).inventory);
+    }
+    private void moveClick(InventoryClickEvent event,MoveMenu menu) {
+        boolean cancelled=event.isCancelled();event.setCancelled(true);
+        if(cancelled||event.getClick()!=ClickType.LEFT||!(event.getWhoClicked() instanceof Player player)||!menu.viewer.equals(player.getUniqueId()))return;
+        int slot=event.getRawSlot();Bukkit.getScheduler().runTask(plugin,()->{
+            if(!player.isOnline()||player.getOpenInventory().getTopInventory()!=menu.inventory)return;
+            if(!canUse(player,menu.store,false)){player.closeInventory();return;}
+            if(slot==15){open(player,menu.store,0,false);return;}
+            if(slot==11)packStore(player,menu.store);
+        });
+    }
+    private StorageMoveData.Snapshot snapshot(Store store) {
+        String owner=((Barrel)store.location.getBlock().getState()).getPersistentDataContainer().get(storageOwner,PersistentDataType.STRING);
+        int[] counts=new int[store.data.size()];for(int i=0;i<counts.length;i++){var entry=store.data.get(i);counts[i]=entry==null?0:entry.count();}
+        return new StorageMoveData.Snapshot(UUID.fromString(owner),ItemStack.serializeItemsAsBytes(store.items()),counts,store.categories);
+    }
+    private void packStore(Player player,Store store) {
+        if(!canUse(player,store,false)||!owns(player,store.location.getBlock()))return;
+        if(player.getInventory().firstEmpty()<0){player.sendMessage("Bitte einen Inventarplatz für das eingepackte Lager freimachen.");return;}
+        Block block=store.location.getBlock();
+        try {
+            // Respect block protection before the durable snapshot takes ownership of the contents.
+            BlockBreakEvent check=new BlockBreakEvent(block,player);check.setDropItems(false);packing.add(store.location);
+            try{Bukkit.getPluginManager().callEvent(check);}finally{packing.remove(store.location);}
+            if(check.isCancelled()){player.sendMessage("Das Lager darf an diesem Standort nicht eingepackt werden.");return;}
+            if(!canUse(player,store,false)||!owns(player,block))return;
+            for(var viewer:List.copyOf(store.viewers()))viewer.closeInventory();player.closeInventory();
+            int slot=player.getInventory().firstEmpty();if(slot<0){player.sendMessage("Bitte einen Inventarplatz freimachen und erneut einpacken.");return;}
+            save(store);
+            var move=moves.pack(store.id,movePoint(store.location),snapshot(store));
+            // From now on this ID is locked at the source, including after a restart/world rollback.
+            store.failed=true;opened.remove(store.location);
+            searching.entrySet().removeIf(e->e.getValue().store()==store);recipeSearches.entrySet().removeIf(e->e.getValue().store==store);
+            remoteUsers.values().removeIf(id->id.equals(store.id));searches.entrySet().removeIf(e->e.getValue().store().equals(store.id));
+            block.setType(Material.AIR,false);player.getInventory().setItem(slot,packedItem(move));releaseIfIdle(store);
+            player.sendMessage("Lager eingepackt. Am neuen Standort platzieren; Handy, Sender und Empfänger bleiben verbunden.");
+        }catch(Exception error){plugin.getLogger().log(java.util.logging.Level.SEVERE,"Lager konnte nicht eingepackt werden: "+store.id,error);
+            player.sendMessage("Einpacken fehlgeschlagen. Lagerdaten bleiben gespeichert; bitte einen Admin informieren.");}
+    }
+    private void writeMoved(Barrel barrel,StorageMoveData.Move move) {
+        ItemStack[] items=ItemStack.deserializeItemsFromBytes(move.snapshot().items());int[] counts=move.snapshot().counts();
+        if(items.length!=counts.length)throw new IllegalStateException("Ungültige Umzugsdaten");
+        for(int i=0;i<items.length;i++)if(BotInventory.empty(items[i])!=(counts[i]==0))throw new IllegalStateException("Umzugsmenge passt nicht zum Item");
+        var pdc=barrel.getPersistentDataContainer();pdc.set(marker,PersistentDataType.BYTE,(byte)1);
+        pdc.set(identity,PersistentDataType.STRING,move.id().toString());pdc.set(storageOwner,PersistentDataType.STRING,move.snapshot().owner().toString());
+        pdc.set(moveToken,PersistentDataType.STRING,move.token().toString());pdc.set(virtualItems,PersistentDataType.BYTE_ARRAY,move.snapshot().items());pdc.set(virtualCounts,PersistentDataType.INTEGER_ARRAY,counts);
+        pdc.set(pageCountKey,PersistentDataType.INTEGER,StorageLayout.pages(counts.length));pdc.set(categoryVersion,PersistentDataType.INTEGER,1);
+        var y=new org.bukkit.configuration.file.YamlConfiguration();y.set("categories",move.snapshot().categories().entrySet().stream().map(e->Map.of("name",e.getKey(),"filter",e.getValue())).toList());pdc.set(categoriesKey,PersistentDataType.STRING,y.saveToString());
+        barrel.getInventory().clear();barrel.customName(Component.text("Lagerterminal"));
+        if(!barrel.update(false,false))throw new IllegalStateException("Umgezogenes Lager konnte nicht platziert werden");
+    }
+    private boolean movedBlock(StorageMoveData.Move move) {
+        World world=Bukkit.getWorld(move.target().world());if(world==null)return false;
+        Block block=world.getBlockAt(move.target().x(),move.target().y(),move.target().z());
+        if(!terminal(block))return false;var pdc=((Barrel)block.getState()).getPersistentDataContainer();
+        return move.id().toString().equals(pdc.get(identity,PersistentDataType.STRING))&&move.token().toString().equals(pdc.get(moveToken,PersistentDataType.STRING));
+    }
+    private void placeMoved(BlockPlaceEvent event) {
+        if(stopping||!event.canBuild()||!(event.getBlockPlaced().getState() instanceof Barrel barrel)){event.setCancelled(true);return;}
+        UUID id=null,token=null;boolean began=false;
+        try {
+            var pdc=event.getItemInHand().getItemMeta().getPersistentDataContainer();id=UUID.fromString(pdc.get(moveId,PersistentDataType.STRING));token=UUID.fromString(pdc.get(moveToken,PersistentDataType.STRING));
+            var move=moves.beginPlace(id,token,event.getPlayer().getUniqueId(),event.getPlayer().hasPermission("casino.admin"),movePoint(event.getBlockPlaced().getLocation()));
+            began=true;
+            placingMoves.add(id);writeMoved(barrel,move);
+            Bukkit.getScheduler().runTask(plugin,()->{
+                try {
+                    if(event.isCancelled()||!event.canBuild()||!movedBlock(move))moves.rollback(move.id(),move.token());
+                    else {
+                        moves.finish(move.id(),move.token());
+                        // Creative placement keeps the held item; invalidate and remove that token too.
+                        Player player=event.getPlayer();for(int i=0;i<player.getInventory().getSize();i++){
+                            ItemStack item=player.getInventory().getItem(i);if(matchesMove(item,move))player.getInventory().setItem(i,null);
+                        }
+                        player.sendMessage("Lager umgezogen · "+StorageLayout.pages(move.snapshot().counts().length)+" Seiten wieder verfügbar. Alle Verbindungen ziehen automatisch mit.");
+                    }
+                }catch(Exception error){plugin.getLogger().log(java.util.logging.Level.SEVERE,"Umzugsplatzierung bleibt gesperrt: "+move.id(),error);event.getPlayer().sendMessage("Umzug konnte nicht abgeschlossen werden. Inhalt ist gesichert; bitte einen Admin informieren.");}
+                finally{placingMoves.remove(move.id());}
+            });
+        }catch(Exception error){
+            event.setCancelled(true);
+            if(began){var move=moves.get(id);if(move!=null&&move.phase()==StorageMoveData.Phase.PLACING&&token.equals(move.token()))try{moves.rollback(id,token);}catch(java.io.IOException ex){plugin.getLogger().log(java.util.logging.Level.SEVERE,"Umzug konnte nicht zurückgesetzt werden",ex);}placingMoves.remove(id);}
+            event.getPlayer().sendMessage(error instanceof IllegalArgumentException?error.getMessage():"Lager konnte nicht ausgepackt werden. Inhalt bleibt gespeichert; bitte einen Admin informieren.");
+            if(!(error instanceof IllegalArgumentException))plugin.getLogger().log(java.util.logging.Level.SEVERE,"Umzugsplatzierung fehlgeschlagen",error);
+        }
+    }
+    private boolean matchesMove(ItemStack item,StorageMoveData.Move move){if(!isMoveItem(item))return false;var pdc=item.getItemMeta().getPersistentDataContainer();return move.id().toString().equals(pdc.get(moveId,PersistentDataType.STRING))&&move.token().toString().equals(pdc.get(moveToken,PersistentDataType.STRING));}
+    private void recoverMoves(){
+        for(var move:moves.all())if(move.phase()==StorageMoveData.Phase.PLACING&&!placingMoves.contains(move.id())&&Bukkit.getWorld(move.target().world())!=null)try{
+            if(movedBlock(move))moves.finish(move.id(),move.token());else moves.rollback(move.id(),move.token());
+        }catch(Exception error){plugin.getLogger().log(java.util.logging.Level.SEVERE,"Lagerumzug-Wiederherstellung fehlgeschlagen: "+move.id(),error);}
+    }
+    private void reconcileMoves(Chunk chunk){
+        for(BlockState state:chunk.getTileEntities())if(state instanceof Barrel barrel&&terminal(barrel.getBlock())){
+            String id=barrel.getPersistentDataContainer().get(identity,PersistentDataType.STRING);if(id==null)continue;
+            var move=moves.get(UUID.fromString(id));if(move==null||move.phase()==StorageMoveData.Phase.PLACING||moves.accessible(move.id(),movePoint(barrel.getLocation())))continue;
+            Store stale=opened.remove(barrel.getLocation());if(stale!=null){stale.failed=true;for(var viewer:List.copyOf(stale.viewers()))viewer.closeInventory();releaseIfIdle(stale);}
+            barrel.getBlock().setType(Material.AIR,false);
+        }
+    }
+    @EventHandler public void moveChunkLoad(ChunkLoadEvent event){reconcileMoves(event.getChunk());}
+    @EventHandler public void moveWorldLoad(WorldLoadEvent event){Bukkit.getScheduler().runTask(plugin,this::recoverMoves);}
+    @EventHandler public void moveCraft(PrepareItemCraftEvent event){if(Arrays.stream(event.getInventory().getMatrix()).anyMatch(this::isMoveItem))event.getInventory().setResult(null);}
+    @EventHandler(priority=EventPriority.HIGHEST) public void moveCraft(CraftItemEvent event){if(Arrays.stream(event.getInventory().getMatrix()).anyMatch(this::isMoveItem))event.setCancelled(true);}
+    @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=true) public void moveFuel(FurnaceBurnEvent event){if(isMoveItem(event.getFuel()))event.setCancelled(true);}
+    private boolean moveCommand(CommandSender sender,String[] args){
+        if(args.length==0)return false;String command=args[0].toLowerCase(Locale.ROOT);
+        if(!List.of("umzug","umzugsliste","wiederherstellen").contains(command))return false;
+        try{
+            if(command.equals("umzug")){
+                if(!(sender instanceof Player player)){sender.sendMessage("Bitte im Spiel ausführen.");return true;}
+                if(args.length!=1){sender.sendMessage("/lager umzug");return true;}
+                Block block=player.getTargetBlockExact(8);if(!terminal(block)){sender.sendMessage("Bitte auf das Lagerterminal schauen.");return true;}showMove(player,load(block));return true;
+            }
+            if(!sender.hasPermission("casino.admin")){sender.sendMessage("Nur Admins können verlorene Umzugsitems wiederherstellen.");return true;}
+            recoverMoves();
+            if(command.equals("umzugsliste")){
+                var packed=moves.all().stream().filter(m->m.phase()!=StorageMoveData.Phase.ACTIVE).toList();
+                if(packed.isEmpty())sender.sendMessage("Keine eingepackten Lager vorhanden.");
+                for(var move:packed)sender.sendMessage(move.id()+" · Besitzer "+move.snapshot().owner()+" · "+move.phase()+" · "+StorageLayout.pages(move.snapshot().counts().length)+" Seiten");return true;
+            }
+            if(args.length!=2||!(sender instanceof Player player)){sender.sendMessage("Im Spiel: /lager wiederherstellen <Lager-ID>");return true;}
+            int slot=player.getInventory().firstEmpty();if(slot<0){sender.sendMessage("Bitte einen Inventarplatz freimachen.");return true;}
+            var move=moves.reissue(UUID.fromString(args[1]));player.getInventory().setItem(slot,packedItem(move));
+            sender.sendMessage("Umzugsitem wiederhergestellt und an den ursprünglichen Besitzer gebunden. Frühere Kopien sind ungültig.");
+        }catch(Exception error){sender.sendMessage(error instanceof IllegalArgumentException||error instanceof IllegalStateException?error.getMessage():"Speicherfehler. Keine Wiederherstellung durchgeführt; bitte Serverlog prüfen.");if(error instanceof java.io.IOException)plugin.getLogger().log(java.util.logging.Level.SEVERE,"Umzugsverwaltung fehlgeschlagen",error);}
+        return true;
+    }
     private boolean validPhone(Player p, ItemStack item, Store store) {
         if (!isPhone(item)) return false;
         var data = item.getItemMeta().getPersistentDataContainer();
         return p.getUniqueId().toString().equals(data.get(ownerKey, PersistentDataType.STRING))
-                && encode(store).equals(data.get(linkKey, PersistentDataType.STRING));
+                && encode(store).equals(resolveLink(data.get(linkKey, PersistentDataType.STRING)));
     }
     private String encode(Store store) {
         return store.location.getWorld().getUID() + ";" + store.location.getBlockX() + ";" + store.location.getBlockY()
@@ -413,11 +599,11 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     }
     private boolean canUse(Player player, Store store, boolean remote) {
         return !store.failed && !stopping && player.getGameMode() != GameMode.SPECTATOR
+                && moves.accessible(store.id, movePoint(store.location))
                 && allowed(player, store.location.getBlock())
-                && player.getWorld().equals(store.location.getWorld())
                 && (remote
                     ? Arrays.stream(player.getInventory().getContents()).anyMatch(i -> validPhone(player, i, store))
-                    : player.getLocation().distanceSquared(store.location.clone().add(.5, .5, .5)) <= 64)
+                    : player.getWorld().equals(store.location.getWorld()) && player.getLocation().distanceSquared(store.location.clone().add(.5, .5, .5)) <= 64)
                 && terminal(store.location.getBlock())
                 && store.id.toString().equals(((Barrel) store.location.getBlock().getState()).getPersistentDataContainer().get(identity, PersistentDataType.STRING));
     }
@@ -434,6 +620,9 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
                 ((Barrel) block.getState()).getPersistentDataContainer().get(storageOwner, PersistentDataType.STRING));
     }
     private Store load(Block block) {
+        String blockId = ((Barrel) block.getState()).getPersistentDataContainer().get(identity, PersistentDataType.STRING);
+        if (blockId != null && !moves.accessible(UUID.fromString(blockId), movePoint(block.getLocation())))
+            throw new IllegalStateException("Dieses Lager ist eingepackt oder wurde an einen anderen Standort verschoben.");
         Store existing = opened.get(block.getLocation());
         if (existing != null) return existing;
         Barrel barrel = (Barrel) block.getState();
@@ -469,6 +658,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         opened.put(store.location, store); return store;
     }
     private void save(Store store) {
+        if (!moves.accessible(store.id, movePoint(store.location))) throw new IllegalStateException("Lager ist im Umzug gesperrt.");
         if (!terminal(store.location.getBlock())) throw new IllegalStateException("Lagerterminal-Block fehlt.");
         Barrel barrel = (Barrel) store.location.getBlock().getState();
         String currentId = barrel.getPersistentDataContainer().get(identity, PersistentDataType.STRING);
@@ -537,6 +727,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     }
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
     public void place(BlockPlaceEvent event) {
+        if (isMoveItem(event.getItemInHand())) { placeMoved(event); return; }
         var meta = event.getItemInHand().getItemMeta();
         if (meta == null || !meta.getPersistentDataContainer().has(marker, PersistentDataType.BYTE)) return;
         if (!(event.getBlockPlaced().getState() instanceof Barrel barrel)) { event.setCancelled(true); return; }
@@ -589,8 +780,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             else{
                 String link=senderLink(player,player.getInventory().getItemInMainHand());
                 if(link!=null&&senderTargetProblem(player.getUniqueId(),player.getWorld(),link)==null){
-                    String[] parts=link.split(";");
-                    store=load(player.getWorld().getBlockAt(Integer.parseInt(parts[1]),Integer.parseInt(parts[2]),Integer.parseInt(parts[3])));remote=true;
+                    store=load(linkBlock(link));remote=true;
                 }
             }
         }
@@ -599,7 +789,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     }
     private Store upgradeStore(Player player,UpgradeTarget target){
         World world=Bukkit.getWorld(target.world());
-        if(world==null||player.getWorld()!=world)throw new IllegalArgumentException("Das ausgewählte Lager ist nicht mehr zugänglich.");
+        if(world==null||!target.remote()&&player.getWorld()!=world)throw new IllegalArgumentException("Das ausgewählte Lager ist nicht mehr zugänglich.");
         Block block=world.getBlockAt(target.x(),target.y(),target.z());
         if(!terminal(block)||!allowed(player,block))throw new IllegalArgumentException("Du hast keinen Zugriff mehr auf das ausgewählte Lager.");
         Store store=load(block);
@@ -658,23 +848,28 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
                 data.set(linkKey, PersistentDataType.STRING, encode(store));
                 meta.lore(List.of(Component.text("Besitzer: " + player.getName()),
                         Component.text("Lager: " + clicked.getX() + ", " + clicked.getY() + ", " + clicked.getZ()),
-                        Component.text("Rechtsklick: Fernzugriff in derselben Welt.")));
+                        Component.text("Rechtsklick: Fernzugriff auf das verbundene Lager.")));
                 handset.setItemMeta(meta);
                 player.getInventory().setItemInMainHand(handset);
                 player.sendMessage("Handy mit diesem Lager verbunden und an dich gebunden."); return;
             }
-            String link = data.get(linkKey, PersistentDataType.STRING);
+            String link;
+            try{link=moves.resolve(data.get(linkKey,PersistentDataType.STRING));}
+            catch(IllegalStateException error){player.sendMessage(error.getMessage());return;}
             if (owner == null || link == null) { player.sendMessage("Zuerst schleichen und mit dem Handy auf ein Lagerterminal rechtsklicken."); return; }
             String[] parts = link.split(";");
             if (parts.length != 5) throw new IllegalArgumentException("Ungültige Handy-Verknüpfung");
-            if (!player.getWorld().getUID().toString().equals(parts[0])) { player.sendMessage("Das Lager liegt in einer anderen Welt."); return; }
-            Location location = new Location(player.getWorld(), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
-            Block block = location.getBlock(); // Loads the target chunk when the player is far away.
+            Block block = linkBlock(link); // Loads the target chunk when the player is far away.
             if (!terminal(block)) { player.sendMessage("Das verknüpfte Lager existiert nicht mehr."); return; }
             if (!allowed(player, block)) { player.sendMessage("Du hast keinen Zugriff mehr auf dieses Lager."); return; }
             Store store = load(block);
             if (!validPhone(player, handset, store)) { player.sendMessage("Das ursprüngliche Lager wurde ersetzt. Bitte das Handy neu verbinden."); return; }
             if (store.failed || stopping) { player.sendMessage("Dieses Lager ist derzeit gesperrt."); return; }
+            if(!link.equals(data.get(linkKey,PersistentDataType.STRING))){
+                data.set(linkKey,PersistentDataType.STRING,link);
+                meta.lore(List.of(Component.text("Besitzer: "+player.getName()),Component.text("Lager: "+block.getWorld().getName()+" · "+block.getX()+", "+block.getY()+", "+block.getZ()),Component.text("Rechtsklick: Fernzugriff auf das verbundene Lager.")));
+                handset.setItemMeta(meta);player.getInventory().setItemInMainHand(handset);
+            }
             open(player, store, 0, true);
         } catch (RuntimeException error) {
             plugin.getLogger().log(java.util.logging.Level.SEVERE, "Handy konnte Lager nicht öffnen", error);
@@ -683,6 +878,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     }
     @EventHandler(priority = EventPriority.HIGHEST)
     public void click(InventoryClickEvent event) {
+        if (event.getView().getTopInventory().getHolder() instanceof MoveMenu menu) { moveClick(event, menu); return; }
         if (event.getView().getTopInventory().getHolder() instanceof Craft craft) {
             craftClick(event, craft); return;
         }
@@ -740,6 +936,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             event.setCancelled(true);
             if (previouslyCancelled) return;
             boolean wasRemote = store.id.equals(remoteUsers.get(p.getUniqueId()));
+            if(slot==49&&event.getClick()==ClickType.LEFT){Bukkit.getScheduler().runTask(plugin,()->{if(p.getOpenInventory().getTopInventory()==page.inventory&&canUse(p,store,wasRemote))showMove(p,store);});return;}
             if(slot==50){ if(event.isRightClick()){p.sendMessage("Eigene Kategorie: /lager kategorie <Name> <Suchfilter,weitere Filter> · Löschen: /lager kategorie <Name> löschen");return;} List<String> names=new ArrayList<>(store.categories.keySet());String category=names.get((Math.max(0,names.indexOf(page.category))+1)%names.size());Bukkit.getScheduler().runTask(plugin,()->{if(p.getOpenInventory().getTopInventory()==page.inventory&&canUse(p,store))openCategory(p,store,0,wasRemote,category);});return;}
             if (slot == 48 && event.getClick() == ClickType.LEFT) {
                 Bukkit.getScheduler().runTask(plugin, () -> {
@@ -872,7 +1069,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     }
     @EventHandler(priority = EventPriority.HIGHEST)
     public void drag(InventoryDragEvent event) {
-        if (event.getView().getTopInventory().getHolder() instanceof Craft) { event.setCancelled(true); return; }
+        if (event.getView().getTopInventory().getHolder() instanceof Craft || event.getView().getTopInventory().getHolder() instanceof MoveMenu) { event.setCancelled(true); return; }
         if (event.getView().getTopInventory().getHolder() instanceof Page page
                 && (!(event.getWhoClicked() instanceof Player p) || !canUse(p, page.store)
                 || event.getRawSlots().stream().anyMatch(slot -> slot < 54))) event.setCancelled(true);
@@ -893,13 +1090,14 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     }
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void breakBlock(BlockBreakEvent event) {
+        if (packing.contains(event.getBlock().getLocation())) return;
         if (!terminal(event.getBlock())) return;
         event.setCancelled(true);
         if (!owns(event.getPlayer(), event.getBlock())) { event.getPlayer().sendMessage("Nur der Besitzer oder ein Admin darf dieses Terminal abbauen."); return; }
         try {
             Store store = load(event.getBlock());
             if (store.failed || Arrays.stream(store.items()).anyMatch(i -> i != null && !i.getType().isAir()) || !store.viewers().isEmpty()) {
-                event.getPlayer().sendMessage("Bitte das Lager vollständig leeren und alle Lagerfenster schließen, bevor du es abbaust."); return;
+                event.getPlayer().sendMessage("Zum Umziehen mit Inhalt: Lager einpacken im Lagermenü oder /lager umzug. Für normalen Abbau bitte leeren und alle Lagerfenster schließen."); return;
             }
             opened.remove(store.location);
             event.getBlock().setType(Material.AIR);
@@ -937,6 +1135,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     void disable() {
         if (senders != null) senders.disable(); if(devices!=null)devices.disable();if(hopperMk2!=null)hopperMk2.disable();
         stopping = true;
+        for(Player player:Bukkit.getOnlinePlayers())if(player.getOpenInventory().getTopInventory().getHolder() instanceof MoveMenu)player.closeInventory();
         for (Store store : List.copyOf(opened.values())) {
             for (var viewer : store.viewers()) viewer.closeInventory();
             flush(store);
@@ -946,6 +1145,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
         PluginChunks.update(plugin, this, Set.of());
     }
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if(moveCommand(sender,args))return true;
         if(args.length>=1&&args[0].equalsIgnoreCase("kategorie")){
             if(!(sender instanceof Player p)){sender.sendMessage("Bitte im Spiel ausführen.");return true;}
             Store store=null;boolean remote=false;
@@ -953,7 +1153,7 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             else {
                 Block target=p.getTargetBlockExact(8);
                 if(terminal(target)&&allowed(p,target))store=load(target);
-                else {String link=senderLink(p,p.getInventory().getItemInMainHand());if(link!=null&&senderTargetProblem(p.getUniqueId(),p.getWorld(),link)==null){String[] parts=link.split(";");store=load(p.getWorld().getBlockAt(Integer.parseInt(parts[1]),Integer.parseInt(parts[2]),Integer.parseInt(parts[3])));remote=true;}}
+                else {String link=senderLink(p,p.getInventory().getItemInMainHand());if(link!=null&&senderTargetProblem(p.getUniqueId(),p.getWorld(),link)==null){store=load(linkBlock(link));remote=true;}}
             }
             if(store==null||!canUse(p,store,remote)){sender.sendMessage("Auf das Lager schauen oder das verbundene Lager-Handy in die Hand nehmen.");return true;}
             if(args.length<3){sender.sendMessage("/lager kategorie <Name> <Suchfilter,weitere Filter> oder /lager kategorie <Name> löschen");return true;}
@@ -983,31 +1183,32 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             p.sendMessage(barrel.update(false, false) ? "Lager zugeordnet an " + target.getName() : "Zuordnung fehlgeschlagen.");
             return true;
         }
-        if (args.length != 1 || (!args[0].equalsIgnoreCase("give") && !args[0].equalsIgnoreCase("handy"))) { sender.sendMessage("/lager give – Terminal; /lager handy – Handy (Admin). Beides ist craftbar."); return true; }
+        if (args.length != 1 || (!args[0].equalsIgnoreCase("give") && !args[0].equalsIgnoreCase("handy"))) { sender.sendMessage("/lager umzug – Lager mit Inhalt einpacken; /lager kategorie – Kategorien verwalten; /lager give / handy – Items (Admin)."); return true; }
         if (!sender.hasPermission("casino.admin")) { sender.sendMessage("Dafür fehlen dir die Admin-Rechte."); return true; }
         if (!(sender instanceof Player p)) { sender.sendMessage("Bitte im Spiel ausführen."); return true; }
         p.getInventory().addItem(args[0].equalsIgnoreCase("handy") ? phone() : item()).values().forEach(i -> p.getWorld().dropItemNaturally(p.getLocation(), i)); return true;
     }
     @Override public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        return sender.hasPermission("casino.admin") && args.length == 1
-                ? List.of("give", "handy", "sender", "empfaenger", "mülleimer", "kategorie", "zuordnen").stream().filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT))).toList() : List.of();
+        if(args.length==2&&args[0].equalsIgnoreCase("wiederherstellen")&&sender.hasPermission("casino.admin"))return moves.all().stream().filter(m->m.phase()==StorageMoveData.Phase.PACKED).map(m->m.id().toString()).filter(s->s.startsWith(args[1])).toList();
+        return args.length == 1
+                ? (sender.hasPermission("casino.admin")?List.of("give", "handy", "sender", "empfaenger", "mülleimer", "kategorie", "zuordnen", "umzug", "umzugsliste", "wiederherstellen"):List.of("kategorie","umzug")).stream().filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT))).toList() : List.of();
     }
 
     String senderLink(Player player, ItemStack handset) {
         if (!isPhone(handset)) return null;
         var data = handset.getItemMeta().getPersistentDataContainer();
         if (!player.getUniqueId().toString().equals(data.get(ownerKey, PersistentDataType.STRING))) return null;
-        return data.get(linkKey, PersistentDataType.STRING);
+        return resolveLink(data.get(linkKey, PersistentDataType.STRING));
     }
 
     // Called synchronously. Re-check the sender owner's team rights even while they are offline.
     String senderTargetProblem(UUID owner, World world, String link) {
         if (link == null) return "Noch nicht mit einem Lager verbunden.";
         try {
+            link = moves.resolve(link);
             String[] parts = link.split(";");
             if (parts.length != 5) return "Ungültige Verbindung. Handy neu verbinden.";
-            if (!world.getUID().toString().equals(parts[0])) return "Das Lager liegt in einer anderen Welt.";
-            Block block = world.getBlockAt(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
+            Block block = linkBlock(link);
             if (!terminal(block)) return "Das Ziel-Lager existiert nicht mehr.";
             var data = ((Barrel) block.getState()).getPersistentDataContainer();
             if (!parts[4].equals(data.get(identity, PersistentDataType.STRING))) return "Das Ziel-Lager wurde ersetzt. Handy neu verbinden.";
@@ -1015,12 +1216,13 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
             if (targetOwner == null) return "Das Ziel-Lager hat keinen Besitzer. Admin: auf das Lager schauen und /lager zuordnen <Spieler> eingeben.";
             if (!teams.shares(UUID.fromString(targetOwner), owner)) return "Der Sender-Besitzer hat keinen Teamzugriff auf dieses Lager.";
             return null;
-        } catch (IllegalArgumentException error) { return "Ungültige Verbindung. Handy neu verbinden."; }
+        } catch (IllegalStateException error) { return error.getMessage(); }
+        catch (IllegalArgumentException error) { return "Ungültige Verbindung. Handy neu verbinden."; }
     }
 
     int export(UUID owner,World world,String link,Material type,int amount,Inventory destination){
         if(stopping||amount<=0||senderTargetProblem(owner,world,link)!=null)return 0;
-        String[] parts=link.split(";");Store store=load(world.getBlockAt(Integer.parseInt(parts[1]),Integer.parseInt(parts[2]),Integer.parseInt(parts[3])));
+        Store store=load(linkBlock(moves.resolve(link)));
         if(store.failed)throw new IllegalStateException("Lager wegen Speicherfehler gesperrt");
         for(int index=0;index<store.data.size();index++){
             var entry=store.data.get(index);if(entry==null||entry.item().getType()!=type)continue;
@@ -1036,9 +1238,10 @@ final class StorageTerminals implements Listener, CommandExecutor, TabCompleter 
     }
     int receive(UUID owner, World world, String link, ItemStack offered) {
         if (stopping || offered == null || offered.getType().isAir()) return 0;
+        if(senderTargetProblem(owner,world,link)!=null)return 0;
+        link=moves.resolve(link);
         String[] parts = link.split(";");
-        if (parts.length != 5 || !world.getUID().toString().equals(parts[0])) return 0;
-        Block block = world.getBlockAt(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
+        Block block = linkBlock(link);
         if (!terminal(block)) return 0;
         var data = ((Barrel) block.getState()).getPersistentDataContainer();
         String targetOwner = data.get(storageOwner, PersistentDataType.STRING);

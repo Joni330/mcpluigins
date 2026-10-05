@@ -34,7 +34,7 @@ D = Diamant, E = Enderperle, R = Redstone, W = Werfer.
 4. Rechtsklick auf den Empfänger öffnet die Itemauswahl. Items im Spielerinventar anklicken: als Materialart auswählen, ohne sie zu verbrauchen. Oben anklicken: Auswahl entfernen.
 5. Komparator: Zielmenge pro Materialart zwischen 16, 64, 256 und 1024 umschalten. Standard: 64.
 
-Bis zu 16 Items alle 5 Sekunden werden nachgefüllt. Bereits vorhandene Items derselben Materialart in der Ausgabekiste zählen zur Zielmenge. Volle Kisten, fehlende Items und fehlender Teamzugriff stoppen die Ausgabe. Gespeicherte Itemdaten bleiben bei der Ausgabe erhalten; der Filter selbst unterscheidet nur Materialarten. Keine Auswahl bedeutet keine Ausgabe. Der Empfänger hat keinen nutzbaren Puffer und arbeitet nur in geladenen Chunks. Das Ziel-Lager muss in derselben Welt liegen. Hard-Crash-Sicherheit über Welt- und Plugin-Daten hinweg ist wie bei bestehenden Sendern keine gemeinsame Transaktion.
+Bis zu 16 Items alle 5 Sekunden werden nachgefüllt. Bereits vorhandene Items derselben Materialart in der Ausgabekiste zählen zur Zielmenge. Volle Kisten, fehlende Items und fehlender Teamzugriff stoppen die Ausgabe. Gespeicherte Itemdaten bleiben bei der Ausgabe erhalten; der Filter selbst unterscheidet nur Materialarten. Keine Auswahl bedeutet keine Ausgabe. Der Empfänger hat keinen nutzbaren Puffer und arbeitet nur in geladenen Chunks. Das Ziel-Lager darf auch nach einem Umzug in einer anderen geladenen Welt liegen. Hard-Crash-Sicherheit über Welt- und Plugin-Daten hinweg ist wie bei bestehenden Sendern keine gemeinsame Transaktion.
 
 Admin: `/lager empfaenger`
 
@@ -67,6 +67,24 @@ Normale Kisten und Redstone-Kisten lassen sich per Rechtsklick unabhängig vom B
 Schleichen mit einem Item in einer Hand bleibt zum Anbauen von Trichtern/Blöcken nutzbar. Abgebrochene Interaktionen und Inventaröffnungen durch Schutzplugins werden respektiert; die normalen Kistenschlösser bleiben über den ursprünglichen Inventaranbieter wirksam. Beim Weggehen oder Entfernen einer Kistenhälfte wird das Fenster geschlossen; Klicks auf ein inzwischen ungültiges Kisteninventar werden sofort gesperrt.
 
 Automatisiert geprüft: Einzel-/Doppelkisten und Redstone-Kisten unter verschiedenen Blöcken, Zugriff von beiden Seiten bei einem Fass nur über einer Hälfte (mit Papers kombinierter Blockade), unveränderte Abdeckung, nachträglich gesperrte Interaktion/Inventaröffnung, fremdes geöffnetes Menü, Offhand, Schleichen, Spectator, ungeladene Hälfte, Weggehen und Abbau der anderen Hälfte bei offenem Fenster. Ingame noch prüfen: Kistenanimation, Hopper-Anbau, Vanilla-Schloss, aktive Schutzplugins und gleichzeitiger Zugriff mehrerer Spieler.
+
+## Mit einem vollen Lager umziehen
+
+Im Lagermenü unten auf **Lager einpacken** klicken und bestätigen. Alternativ am Terminal auf den Block schauen und `/lager umzug` ausführen. Besitzer oder Admin müssen zum Einpacken direkt am Terminal stehen; ein freier Inventarplatz ist nötig. Das gilt auch bei vollständig gefüllten und erweiterten Lagern.
+
+1. Alle offenen Lagerfenster schließen sich. Der Inhalt wird mit Mengen, vollständigen Itemdaten, Kategorien und Besitzer auf dem Server gesichert.
+2. Das Terminal verschwindet ohne lose Inhaltsdrops. Du erhältst ein nicht stapelbares **Eingepacktes Lager**, das seine Seitenzahl, Itemmenge und Lager-ID anzeigt.
+3. Das Item am neuen Standort als Fass platzieren. Die bisherige Lager-ID, gekaufte Kapazität und Besitzer-/Teamrechte bleiben erhalten; erst danach ist das Lager wieder zugänglich.
+
+Handys, Sender und Empfänger behalten ihre Verbindungen: Ihre gespeicherte Lager-ID wird automatisch zum aktuellen Standort aufgelöst, auch nach weiteren Umzügen und bei bislang ungeladenen Geräten. Eingepackt bzw. während der Platzierung pausiert die Übertragung; Puffer und Filter der Geräte bleiben erhalten. Handys aktualisieren die Standortanzeige beim nächsten Öffnen. Fernzugriff und Geräteverbindungen unterstützen dafür auch andere geladene Welten. Beim Einpacken wird ein abbrechbarer BlockBreakEvent zur Prüfung des Abbauschutzes ausgelöst; das Wiederplatzieren folgt dem normalen BlockPlaceEvent.
+
+Nur Besitzer oder Admin können das Umzugsitem platzieren. Der Inhalt liegt in `plugins/Casino/storage-moves/`, das Item enthält nur Lager-ID und einen einmaligen Schlüssel. Kopierte oder nach einer Wiederherstellung veraltete Items können das Lager nicht nochmals auspacken. Eingepackte Lager können nicht als Crafting-Zutat oder Ofenbrennstoff benutzt werden. Der normale Abbau leerer Terminals bleibt erhalten.
+
+Für ein verlorenes Item: Admin führt `/lager umzugsliste` aus und erhält Lager-IDs mit Besitzer und Status. Im Spiel gibt `/lager wiederherstellen <Lager-ID>` ein neues, weiterhin an den ursprünglichen Besitzer gebundenes Item. Die bisherigen Umzugsitems dieses Lagers werden dabei ungültig. Ein bereits ausgepacktes Lager lässt sich über diesen Befehl nicht duplizieren. Der Admin kann das Item übergeben oder das Lager für den Besitzer platzieren.
+
+Das Umzugsjournal wird vor dem Entfernen des ursprünglichen Terminals geschrieben. Bis eine Platzierung bestätigt ist, bleibt der Zugriff gesperrt. Nach einem normalen Neustart wird eine ausstehende Platzierung anhand von Lager-ID und Schlüssel am Ziel abgeschlossen oder zurückgesetzt. Alte Quellen aus zurückgerollten Weltchunks werden gesperrt und beim Chunkladen entfernt, damit sie keine zweite Kopie liefern. Welt- und Plugin-Daten weiterhin gemeinsam sichern; bei einem harten Prozess-/Datenträgerausfall sind Welt, Spielerinventar und Journal keine gemeinsame Transaktion. Das Journal wird nicht verwendet, um bei einem aktiven Lager einen alten Inhalt zurückzuspielen.
+
+Automatisiert geprüft: acht volle Seiten mit 1.024 Items pro Platz, zwölf Seiten Gesamtkapazität, unveränderte Payload/Mengen/Kategorien, Eigentümer, mehrere Umzüge und alte Verbindungen, andere Welten, Neustart während der Platzierung, Rücknahme, Kopien und veraltete Schlüssel, Wiederherstellung und Speicherfehler ohne Änderung am vorherigen Journalstand. Ingame noch prüfen: Bestätigungsfenster, reale Items mit Metadaten, volles Spielerinventar, mehrere Betrachter, Schutzplugins, verlorenes Item, kreative Platzierung, Handy/Sender/Empfänger und Serverneustart.
 
 ## Lager-Werkbank: Lager und Spielerinventar
 
